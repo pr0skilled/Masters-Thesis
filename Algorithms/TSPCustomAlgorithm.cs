@@ -4,331 +4,225 @@ using System.Windows;
 
 namespace Thesis.Algorithms
 {
-    using Models;
-
     public class TSPCustomAlgorithm : TSPAlgorithmBase, ITSPAlgorithm
     {
-        private Dictionary<string, double> nearestPoints;
-        private Dictionary<string, double> subPaths;
-        private string freePoints;
-        private int maxCost;
-        private string bestPath;
-        private bool hasConverged;
-        private Stopwatch stopWatch;
+        private int k;
 
-        public TSPCustomAlgorithm(List<Point> pointsGiven) : base(pointsGiven)
+        public List<List<int>> IntermediateRoutes { get; private set; }
+
+        public TSPCustomAlgorithm(List<Point> pointsGiven, int k = 7) : base(pointsGiven)
         {
-            this.nearestPoints = [];
-            this.subPaths = [];
-            this.freePoints = string.Empty;
-            this.bestPath = string.Empty;
-            this.hasConverged = false;
-            this.stopWatch = new Stopwatch();
-            this.maxCost = 0;
-
-            this.Initialize();
+            this.k = k;
+            this.IntermediateRoutes = [];
         }
 
         public override (string BestPath, double BestScore, TimeSpan ElapsedTime) Solve()
         {
-            this.stopWatch.Start();
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
 
-            while (!this.hasConverged)
-            {
-                this.Step();
-            }
-
-            this.stopWatch.Stop();
-
-            return (this.bestPath, this.bestScore, this.stopWatch.Elapsed);
-        }
-
-        private void Initialize()
-        {
-            this.numberOfPoints = this.PointsGiven.Count;
-            this.distanceMatrix = new double[this.numberOfPoints, this.numberOfPoints];
-            this.nearestPoints.Clear();
-            this.subPaths.Clear();
-            this.freePoints = string.Empty;
-            this.bestPath = string.Empty;
-            this.hasConverged = false;
-            this.stopWatch.Reset();
-
+            // Calculate the distance matrix
             this.CalculateDistanceMatrix();
 
-            var sb = new StringBuilder();
+            // **Initial Route Construction Phase**
 
-            for (int i = 0; i < this.numberOfPoints; i++)
+            // Find East, North, West, and South cities
+            int eastCityIndex = 0;
+            int westCityIndex = 0;
+            int northCityIndex = 0;
+            int southCityIndex = 0;
+
+            double maxX = this.PointsGiven[0].X;
+            double minX = this.PointsGiven[0].X;
+            double maxY = this.PointsGiven[0].Y;
+            double minY = this.PointsGiven[0].Y;
+
+            for (int i = 0; i < this.PointsGiven.Count; i++)
             {
-                sb.Append((char)(65 + i));
+                double x = this.PointsGiven[i].X;
+                double y = this.PointsGiven[i].Y;
+
+                if (x > maxX)
+                {
+                    maxX = x;
+                    eastCityIndex = i;
+                }
+                if (x < minX)
+                {
+                    minX = x;
+                    westCityIndex = i;
+                }
+                if (y > maxY)
+                {
+                    maxY = y;
+                    northCityIndex = i;
+                }
+                if (y < minY)
+                {
+                    minY = y;
+                    southCityIndex = i;
+                }
             }
 
-            this.freePoints = sb.ToString();
+            // Initialize Route with unique city indices
+            var route = new List<int>();
+            var initialCities = new HashSet<int> { eastCityIndex, northCityIndex, westCityIndex, southCityIndex };
+            route.AddRange(initialCities);
 
-            this.InitializeNearestPoints();
-        }
+            // Add the initial route to IntermediateRoutes
+            this.IntermediateRoutes.Add(new List<int>(route));
 
-        private void InitializeNearestPoints()
-        {
-            this.maxCost = int.MaxValue;
-
-            for (int i = 0; i < this.numberOfPoints; i++)
+            // Initialize Visited list
+            bool[] visited = new bool[this.PointsGiven.Count];
+            foreach (var cityIndex in route)
             {
-                char pointA = (char)(65 + i);
-                double minPathCost = this.maxCost;
-                char pointB = '\0';
+                visited[cityIndex] = true;
+            }
 
-                for (int j = 0; j < this.numberOfPoints; j++)
+            // Initialize Open list
+            var openCities = new List<int>();
+            for (int i = 0; i < this.PointsGiven.Count; i++)
+            {
+                if (!visited[i])
                 {
-                    if (i != j)
-                    {
-                        char tempPoint = (char)(65 + j);
-                        string path = $"{pointA}{tempPoint}";
-                        string revPath = $"{tempPoint}{pointA}";
+                    openCities.Add(i);
+                }
+            }
 
-                        if (!this.nearestPoints.ContainsKey(path) && !this.nearestPoints.ContainsKey(revPath))
+            // While Open is not empty
+            while (openCities.Count > 0)
+            {
+                double bestCost = double.MaxValue;
+                List<int>? bestRoute = null;
+                int bestCityIndex = -1;
+
+                // For each city in Open
+                foreach (int cityIndex in openCities)
+                {
+                    // For each possible insertion position
+                    for (int position = 0; position <= route.Count; position++)
+                    {
+                        var newRoute = new List<int>(route);
+                        newRoute.Insert(position, cityIndex);
+
+                        // Calculate the cost of the new route
+                        double cost = CalculateRouteCost(newRoute);
+
+                        if (cost < bestCost)
                         {
-                            double dist = this.distanceMatrix[i, j];
-                            if (dist < minPathCost)
-                            {
-                                minPathCost = dist;
-                                pointB = tempPoint;
-                            }
+                            bestCost = cost;
+                            bestRoute = newRoute;
+                            bestCityIndex = cityIndex;
                         }
                     }
                 }
 
-                if (pointB != '\0')
-                {
-                    string minPath = $"{pointA}{pointB}";
-                    this.nearestPoints.Add(minPath, minPathCost);
-                }
+                // Update Route and Visited status
+                route = bestRoute;
+                visited[bestCityIndex] = true;
+                openCities.Remove(bestCityIndex);
+
+                // Add the updated route to IntermediateRoutes
+                this.IntermediateRoutes.Add(new List<int>(route));
             }
 
-            // Sort nearestPoints by value (distance) in ascending order
-            this.nearestPoints = this.nearestPoints.OrderBy(kvp => kvp.Value)
-                                                   .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-        }
+            // **Optimization Phase**
 
-        public void Step()
-        {
-            if (this.hasConverged)
-                return;
-
-            this.TSP_NEW_STEP(ref this.bestPath);
-
-            if (this.subPaths.Count == 1 && this.subPaths.First().Key.Length == this.numberOfPoints)
+            int n = route.Count;
+            for (int i = 0; i <= n - k; i++)
             {
-                this.hasConverged = true;
+                var segment = route.GetRange(i, k);
+                var permutations = GetPermutations(segment);
+                double bestCost = double.MaxValue;
+                List<int>? bestSegment = null;
 
-                // Complete the cycle by adding the starting city at the end
-                if (this.bestPath[0] != this.bestPath[^1])
+                foreach (var perm in permutations)
                 {
-                    this.bestPath += this.bestPath[0];
-                }
+                    var newRoute = new List<int>(route);
+                    newRoute.RemoveRange(i, k);
+                    newRoute.InsertRange(i, perm);
 
-                this.bestScore = this.FindPathDistance(this.bestPath);
-                this.PaintPath = Utils.StringToIntArray(this.bestPath);
-            }
-        }
-
-        public bool HasConverged => this.hasConverged;
-
-        public (string BestPath, double BestScore, TimeSpan ElapsedTime) GetResult()
-        {
-            return (this.bestPath, this.bestScore, this.stopWatch.Elapsed);
-        }
-
-        private void TSP_NEW_STEP(ref string bestPath)
-        {
-            if (!this.nearestPoints.Any())
-            {
-                // All nearest points have been processed
-                return;
-            }
-
-            string nearestPoint = this.nearestPoints.First().Key;
-            this.nearestPoints.Remove(nearestPoint);
-
-            List<string> matchedPaths = this.subPaths.Keys
-                .Where(p => p.Contains(nearestPoint[0]) || p.Contains(nearestPoint[1]))
-                .ToList();
-
-            if (matchedPaths.Count == 0)
-            {
-                // Create a new subpath
-                this.subPaths.Add(nearestPoint, this.FindPathDistance(nearestPoint));
-            }
-            else if (matchedPaths.Count == 1)
-            {
-                // Merge the nearest point with the existing subpath
-                string existingPath = matchedPaths[0];
-                string newPath = this.MergePoint(existingPath, nearestPoint);
-
-                if (newPath != null)
-                {
-                    this.subPaths.Remove(existingPath);
-                    this.subPaths.Add(newPath, this.FindPathDistance(newPath));
-                }
-                // If newPath is null, cannot merge; skip this edge
-            }
-            else if (matchedPaths.Count == 2)
-            {
-                // Attempt to merge two subpaths
-                string path1 = matchedPaths[0];
-                string path2 = matchedPaths[1];
-                string newPath = this.MergePaths(path1, path2, nearestPoint);
-
-                if (newPath != null)
-                {
-                    this.subPaths.Remove(path1);
-                    this.subPaths.Remove(path2);
-                    this.subPaths.Add(newPath, this.FindPathDistance(newPath));
-                }
-                else
-                {
-                    // Cannot merge the subpaths with this edge; skip it
-                    // Optionally, you can decide whether to re-add the edge back to nearestPoints
-                }
-            }
-
-            // Update freePoints
-            this.UpdateFreePoints();
-
-            // Remove any paths that would create a cycle prematurely
-            this.RemoveInvalidNearestPoints();
-        }
-
-        private void UpdateFreePoints()
-        {
-            var usedPoints = new HashSet<char>(this.subPaths.Keys.SelectMany(p => p));
-            var allPoints = new HashSet<char>(Enumerable.Range(0, this.numberOfPoints).Select(i => (char)(65 + i)));
-            var freePointsSet = allPoints.Except(usedPoints);
-            this.freePoints = new string(freePointsSet.ToArray());
-        }
-
-        private void RemoveInvalidNearestPoints()
-        {
-            var invalidPaths = new List<string>();
-
-            foreach (var path in this.nearestPoints.Keys)
-            {
-                foreach (var subPath in this.subPaths.Keys)
-                {
-                    if (subPath.Contains(path[0]) && subPath.Contains(path[1]))
+                    double cost = CalculateRouteCost(newRoute);
+                    if (cost < bestCost)
                     {
-                        invalidPaths.Add(path);
-                        break;
+                        bestCost = cost;
+                        bestSegment = new List<int>(perm);
                     }
                 }
+
+                if (bestSegment != null && !bestSegment.SequenceEqual(route.GetRange(i, k)))
+                {
+                    route.RemoveRange(i, k);
+                    route.InsertRange(i, bestSegment);
+
+                    // Add the updated route to IntermediateRoutes
+                    this.IntermediateRoutes.Add(new List<int>(route));
+                }
             }
 
-            foreach (var path in invalidPaths)
+            // Recalculate total cost and BestPath
+            double totalCost = CalculateRouteCost(route);
+
+            var bestPathBuilder = new StringBuilder();
+            foreach (int cityIndex in route)
             {
-                this.nearestPoints.Remove(path);
+                bestPathBuilder.Append((char)(cityIndex + 65));
             }
+            // Close the route by returning to the starting city
+            bestPathBuilder.Append((char)(route[0] + 65));
+            string bestPath = bestPathBuilder.ToString();
+
+            stopwatch.Stop();
+
+            // Update PaintPath and bestScore
+            this.PaintPath = new List<int>(route);
+            this.bestScore = totalCost;
+
+            return (bestPath, this.bestScore, stopwatch.Elapsed);
         }
 
-        private bool IsNotInNearestPoints(char c)
+        private List<List<int>> GetPermutations(List<int> list)
         {
-            return !this.nearestPoints.Keys.Any(key => key[0] == c || key[1] == c);
+            var result = new List<List<int>>();
+            Permute(list, 0, list.Count - 1, result);
+            return result;
         }
 
-        private string MergePaths(string str1, string str2, string connectingEdge)
+        private void Permute(List<int> list, int l, int r, List<List<int>> result)
         {
-            char str1_start = str1[0];
-            char str1_end = str1[^1];
-            char str2_start = str2[0];
-            char str2_end = str2[^1];
-            char edge_start = connectingEdge[0];
-            char edge_end = connectingEdge[1];
-
-            // Align str1 with connectingEdge
-            if (str1_end == edge_start)
+            if (l == r)
             {
-                // Already aligned
-            }
-            else if (str1_start == edge_start)
-            {
-                str1 = ReverseString(str1);
-            }
-            else if (str1_end == edge_end)
-            {
-                connectingEdge = ReverseString(connectingEdge);
-            }
-            else if (str1_start == edge_end)
-            {
-                str1 = ReverseString(str1);
-                connectingEdge = ReverseString(connectingEdge);
+                result.Add(new List<int>(list));
             }
             else
             {
-                // Cannot align str1 with connectingEdge
-                return null;
-            }
-
-            // Update edge_start and edge_end after potential reversal
-            edge_start = connectingEdge[0];
-            edge_end = connectingEdge[1];
-
-            // Align str2 with connectingEdge
-            if (str2_start == edge_end)
-            {
-                // Already aligned
-            }
-            else if (str2_end == edge_end)
-            {
-                str2 = ReverseString(str2);
-            }
-            else if (str2_start == edge_start)
-            {
-                str2 = ReverseString(str2);
-                connectingEdge = ReverseString(connectingEdge);
-            }
-            else if (str2_end == edge_start)
-            {
-                connectingEdge = ReverseString(connectingEdge);
-            }
-            else
-            {
-                // Cannot align str2 with connectingEdge
-                return null;
-            }
-
-            // Merge the paths
-            string mergedPath = str1 + str2.Substring(1);
-            return mergedPath;
-        }
-
-        private string MergePoint(string existingPath, string edge)
-        {
-            char mergePoint = edge[0] == existingPath[0] ? edge[1] : edge[0];
-
-            if (existingPath[0] == edge[0] || existingPath[0] == edge[1])
-            {
-                return mergePoint + existingPath;
-            }
-            else if (existingPath[^1] == edge[0] || existingPath[^1] == edge[1])
-            {
-                return existingPath + mergePoint;
-            }
-            else
-            {
-                // Cannot merge edge with existing path
-                return null;
+                for (int i = l; i <= r; i++)
+                {
+                    Swap(list, l, i);
+                    Permute(list, l + 1, r, result);
+                    Swap(list, l, i); // backtrack
+                }
             }
         }
 
-        private bool MatchString(string str1, string str2)
+        private void Swap(List<int> list, int i, int j)
         {
-            return str1.Contains(str2[0]) || str1.Contains(str2[1]);
+            int temp = list[i];
+            list[i] = list[j];
+            list[j] = temp;
         }
 
-        private static string ReverseString(string s)
+        public double CalculateRouteCost(List<int> route)
         {
-            char[] arr = s.ToCharArray();
-            Array.Reverse(arr);
-            return new string(arr);
+            double totalCost = 0;
+            int n = route.Count;
+            for (int i = 0; i < n; i++)
+            {
+                int city1 = route[i];
+                int city2 = route[(i + 1) % n]; // Ensure the route is a cycle
+                totalCost += this.distanceMatrix[city1, city2];
+            }
+            return totalCost;
         }
     }
 }

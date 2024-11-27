@@ -8,7 +8,7 @@
         mc:Ignorable="d"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         xmlns:viewmodels="clr-namespace:Thesis.ViewModels" d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
-        Title="MainWindow" Height="675" Width="1500">
+        Title="MainWindow" Height="1250" Width="1750">
     <Grid>
         <!-- Define Rows and Columns -->
         <Grid.ColumnDefinitions>
@@ -29,7 +29,7 @@
         </Grid.RowDefinitions>
 
         <!-- Left Panel Controls -->
-        <StackPanel Margin="0,10,0,10" HorizontalAlignment="Center" Width="130">
+        <StackPanel Margin="0,40,0,10" HorizontalAlignment="Center" Width="130">
             <!-- Label and TextBox for Points File -->
             <Button x:Name="selectPointsFile" Content="Select points file" Margin="0,0,0,10" Width="120" Command="{Binding SelectPointsFileCommand}" />
 
@@ -49,13 +49,10 @@
             <Button x:Name="genetic" Content="Genetic Algorithm" Width="120" Height="40" Margin="0,5,0,0" Command="{Binding RunGeneticAlgorithmCommand}" />
             <Button x:Name="prims" Content="Prim's Approx" Width="120" Height="40" Margin="0,5,0,0" Command="{Binding RunPrimsApproximationCommand}" />
             <Button x:Name="newAlgo" Content="Custom" Width="120" Height="40" Margin="0,5,0,0" Command="{Binding RunCustomAlgorithmCommand}" />
-            <Button x:Name="stepButton" Content="Custom Step" Width="120" Height="45" Margin="0,5,0,0" Command="{Binding RunCustomAlgorithmStepCommand}" />
-            <Button x:Name="testButton" Content="Test" Width="120" Height="45" Margin="0,5,0,0" Command="{Binding RunTestAlgorithmCommand}" />
-            <Button x:Name="testPlusButton" Content="Test+" Width="120" Height="45" Margin="0,5,0,0" Command="{Binding RunTestPlusAlgorithmCommand}" />
         </StackPanel>
 
         <!-- Center Panel: Canvas or Image for Drawing -->
-        <StackPanel Grid.Column="1" Margin="10,10,10,10" MaxWidth="520">
+        <StackPanel Grid.Column="1" Margin="10,10,10,10" MaxWidth="750">
             <TextBlock x:Name="resultsTextBlock"
                        Text="{Binding ResultsSummary, FallbackValue='Results'}"
                        FontSize="14"
@@ -69,15 +66,20 @@
                        TextWrapping="Wrap"
                        Visibility="{Binding IsDrawingMode, Converter={StaticResource BoolToVisibilityConverter}}"
                        HorizontalAlignment="Right"/>
+            <TextBlock x:Name="citiesCountTextBlock"
+                       Text="{Binding UserCitiesCount}"
+                       FontSize="14"
+                       TextWrapping="Wrap"
+                       Visibility="{Binding IsDrawingMode, Converter={StaticResource BoolToVisibilityConverter}}"
+                       HorizontalAlignment="Left"/>
             <!-- Use a Canvas for drawing paths -->
             <Canvas x:Name="drawingCanvas"
-                    Width="500" Height="500"
+                    Width="750" Height="750"
                     Margin="0,10,0,0"
                     Background="LightGray"
                     MouseMove="Canvas_MouseMove"
                     MouseLeftButtonDown="Canvas_MouseLeftButtonDown"
                     MouseRightButtonDown="Canvas_MouseRightButtonDown"/>
-            <!-- ProgressBar -->
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="23*"/>
@@ -90,13 +92,25 @@
                     <Button Content="Clear All" Width="120" Height="40" Command="{Binding ClearCanvasCommand}" Margin="5" />
                     <Button Content="Cancel" Width="120" Height="40" Command="{Binding CancelDrawingCommand}" Margin="5" />
                 </StackPanel>
+                <StackPanel Orientation="Horizontal" Visibility="{Binding SliderVisibility}">
+                    <Label Content="Step:" VerticalAlignment="Center" />
+                    <Slider Minimum="0"
+                            Maximum="{Binding MaxStepIndex}"
+                            Value="{Binding CurrentStepIndex, Mode=TwoWay}"
+                            TickFrequency="1"
+                            IsSnapToTickEnabled="True"
+                            Width="600"
+                            VerticalAlignment="Center"
+                            Margin="10,0,0,0"/>
+                    <TextBlock Text="{Binding CurrentStepIndex}" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                </StackPanel>
             </Grid>
         </StackPanel>
 
         <!-- Right Panel: Chart Control -->
         <StackPanel Grid.Column="2" Margin="10,10,10,10">
             <TextBlock x:Name="costTextBlock" Text="{Binding CostSummary, FallbackValue='Cost'}" FontSize="14" TextWrapping="Wrap" />
-            <oxy:PlotView x:Name="costChart" Width="600" Height="400" HorizontalAlignment="Left" Margin="10,10,0,0"  />
+            <oxy:PlotView x:Name="costChart" Width="800" Height="450" HorizontalAlignment="Left" Margin="10,10,0,0"  />
         </StackPanel>
     </Grid>
 </Window>

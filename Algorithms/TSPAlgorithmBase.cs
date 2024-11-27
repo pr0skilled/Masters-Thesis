@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Text;
+using System.Windows;
 
 namespace Thesis.Algorithms;
 
@@ -67,5 +68,16 @@ public abstract class TSPAlgorithmBase : ITSPAlgorithm
         }
 
         return distance;
+    }
+
+    public string BuildPathString(List<int> route)
+    {
+        var bestPathBuilder = new StringBuilder();
+        foreach (int cityIndex in route)
+        {
+            bestPathBuilder.Append((char)(cityIndex + 65));
+        }
+        bestPathBuilder.Append((char)(route[0] + 65));
+        return bestPathBuilder.ToString();
     }
 }
