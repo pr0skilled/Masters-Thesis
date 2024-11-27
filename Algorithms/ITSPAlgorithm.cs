@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Thesis.Algorithms
+﻿namespace Thesis.Algorithms
 {
-    internal class ITSPAlgorithm
+    public interface ITSPAlgorithm
     {
+        (string BestPath, double BestScore, TimeSpan ElapsedTime) Solve();
     }
 }

@@ -11,8 +11,32 @@
       "RelativeMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|solutionrelative:mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|c:\\users\\alex\\source\\repos\\thesis\\viewmodels\\mainviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|solutionrelative:viewmodels\\mainviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|c:\\users\\alex\\source\\repos\\thesis\\algorithms\\tspcustomalgorithm.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|solutionrelative:algorithms\\tspcustomalgorithm.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|c:\\users\\alex\\source\\repos\\thesis\\algorithms\\tspiam.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|solutionrelative:algorithms\\tspiam.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|c:\\users\\alex\\source\\repos\\thesis\\algorithms\\tspiamplus.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|solutionrelative:algorithms\\tspiamplus.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|c:\\users\\alex\\source\\repos\\thesis\\utils\\utils.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|solutionrelative:utils\\utils.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|c:\\users\\alex\\source\\repos\\thesis\\algorithms\\tspbruteforce.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|solutionrelative:algorithms\\tspbruteforce.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|c:\\users\\alex\\source\\repos\\thesis\\algorithms\\tspalgorithmbase.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|solutionrelative:algorithms\\tspalgorithmbase.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -116,7 +140,7 @@
               "RelativeDocumentMoniker": "MainWindow.xaml.cs",
               "ToolTip": "C:\\Users\\Alex\\source\\repos\\Thesis\\MainWindow.xaml.cs",
               "RelativeToolTip": "MainWindow.xaml.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAACUAAAAkAAAA",
+              "ViewState": "AQIAAG8AAAAAAAAAAIAywPIAAAARAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2024-11-08T15:16:02.508Z",
               "EditorCaption": ""
@@ -130,20 +154,98 @@
               "ToolTip": "C:\\Users\\Alex\\source\\repos\\Thesis\\MainWindow.xaml",
               "RelativeToolTip": "MainWindow.xaml",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2024-11-08T15:16:04.317Z",
+              "WhenOpened": "2024-11-14T00:12:47.059Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 2,
+              "Title": "MainViewModel.cs",
+              "DocumentMoniker": "C:\\Users\\Alex\\source\\repos\\Thesis\\ViewModels\\MainViewModel.cs",
+              "RelativeDocumentMoniker": "ViewModels\\MainViewModel.cs",
+              "ToolTip": "C:\\Users\\Alex\\source\\repos\\Thesis\\ViewModels\\MainViewModel.cs",
+              "RelativeToolTip": "ViewModels\\MainViewModel.cs",
+              "ViewState": "AQIAAKsBAAAAAAAAAAAYwNsBAAApAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-11-12T17:18:54.021Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "TSPCustomAlgorithm.cs",
+              "DocumentMoniker": "C:\\Users\\Alex\\source\\repos\\Thesis\\Algorithms\\TSPCustomAlgorithm.cs",
+              "RelativeDocumentMoniker": "Algorithms\\TSPCustomAlgorithm.cs",
+              "ToolTip": "C:\\Users\\Alex\\source\\repos\\Thesis\\Algorithms\\TSPCustomAlgorithm.cs",
+              "RelativeToolTip": "Algorithms\\TSPCustomAlgorithm.cs",
+              "ViewState": "AQIAAAwAAAAAAAAAAAArwCYAAAAMAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-11-14T03:49:46.206Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "TSPAlgorithmBase.cs",
+              "DocumentMoniker": "C:\\Users\\Alex\\source\\repos\\Thesis\\Algorithms\\TSPAlgorithmBase.cs",
+              "RelativeDocumentMoniker": "Algorithms\\TSPAlgorithmBase.cs",
+              "ToolTip": "C:\\Users\\Alex\\source\\repos\\Thesis\\Algorithms\\TSPAlgorithmBase.cs",
+              "RelativeToolTip": "Algorithms\\TSPAlgorithmBase.cs",
+              "ViewState": "AQIAABEAAAAAAAAAAAAiwCgAAAAUAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-11-22T16:25:22.607Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
               "Title": "Utils.cs",
               "DocumentMoniker": "C:\\Users\\Alex\\source\\repos\\Thesis\\Utils\\Utils.cs",
               "RelativeDocumentMoniker": "Utils\\Utils.cs",
               "ToolTip": "C:\\Users\\Alex\\source\\repos\\Thesis\\Utils\\Utils.cs",
               "RelativeToolTip": "Utils\\Utils.cs",
-              "ViewState": "AQIAAAUAAAAAAAAAAAAxwBAAAAAdAAAA",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAFEAAAAJAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-11-08T15:16:24.768Z",
+              "WhenOpened": "2024-11-22T18:51:08.854Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "TSPIAM.cs",
+              "DocumentMoniker": "C:\\Users\\Alex\\source\\repos\\Thesis\\Algorithms\\TSPIAM.cs",
+              "RelativeDocumentMoniker": "Algorithms\\TSPIAM.cs",
+              "ToolTip": "C:\\Users\\Alex\\source\\repos\\Thesis\\Algorithms\\TSPIAM.cs",
+              "RelativeToolTip": "Algorithms\\TSPIAM.cs",
+              "ViewState": "AQIAAG8AAAAAAAAAAAAhwIsAAAARAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-11-26T21:44:46.031Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "TSPBruteForce.cs",
+              "DocumentMoniker": "C:\\Users\\Alex\\source\\repos\\Thesis\\Algorithms\\TSPBruteForce.cs",
+              "RelativeDocumentMoniker": "Algorithms\\TSPBruteForce.cs",
+              "ToolTip": "C:\\Users\\Alex\\source\\repos\\Thesis\\Algorithms\\TSPBruteForce.cs",
+              "RelativeToolTip": "Algorithms\\TSPBruteForce.cs",
+              "ViewState": "AQIAABkAAAAAAAAAAAAQwDwAAABBAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-11-26T21:45:44.998Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "TSPIAMPlus.cs",
+              "DocumentMoniker": "C:\\Users\\Alex\\source\\repos\\Thesis\\Algorithms\\TSPIAMPlus.cs",
+              "RelativeDocumentMoniker": "Algorithms\\TSPIAMPlus.cs",
+              "ToolTip": "C:\\Users\\Alex\\source\\repos\\Thesis\\Algorithms\\TSPIAMPlus.cs",
+              "RelativeToolTip": "Algorithms\\TSPIAMPlus.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABIAAAAtAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-11-26T21:53:26.162Z",
               "EditorCaption": ""
             }
           ]
