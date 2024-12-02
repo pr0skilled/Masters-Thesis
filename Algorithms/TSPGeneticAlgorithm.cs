@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using System.Text;
 using System.Windows;
 
 namespace Thesis.Algorithms
@@ -11,9 +10,13 @@ namespace Thesis.Algorithms
         private int pathsChecked;
         private int totalPaths;
 
-        // Public properties to expose PathsChecked and TotalPaths
         public int PathsChecked => this.pathsChecked;
         public int TotalPaths => this.totalPaths;
+
+        public int TotalGenerations { get; private set; }
+        public int PopulationSize { get; private set; }
+        public double MutationRate { get; private set; }
+        public double InitialBestScore { get; private set; }
 
         public TSPGeneticAlgorithm(List<Point> pointsGiven) : base(pointsGiven)
         {
@@ -29,13 +32,12 @@ namespace Thesis.Algorithms
             int generation = 0;
             int maxGenerations = 1000; // Prevent infinite loops
             double totalScores;
-            double minScore;
 
-            var population = new List<string>();
-            var children = new string[populationCount];
+            var population = new List<List<int>>();
+            var children = new List<List<int>>(populationCount);
             var nextGenScores = new double[populationCount];
             double mutationRate = 0.1;
-            string bestPath = string.Empty;
+            List<int> bestPath = null;
             double currentBestScore = double.MaxValue;
 
             var stopWatch = new Stopwatch();
@@ -46,45 +48,61 @@ namespace Thesis.Algorithms
             // Initialize total paths
             this.totalPaths = populationCount * threshold;
 
-            // Fix the starting city
-            char startingCity = 'A';
+            this.TotalGenerations = 0;
+            this.PopulationSize = populationCount;
+            this.MutationRate = mutationRate;
+
+            // Fix the starting city index
+            int startingCityIndex = 0;
+
             int cityCount = this.PointsGiven.Count;
 
             // Create initial sample population
             for (int i = 0; i < populationCount; i++)
             {
-                string individual = GenerateRandomPath(cityCount, startingCity);
+                var individual = GenerateRandomPath(cityCount, startingCityIndex);
                 population.Add(individual);
             }
 
-            var rnd = Utils.Random;
+            foreach (var individual in population)
+            {
+                double score = this.CalculateRouteCost(individual);
+                if (score < currentBestScore)
+                {
+                    currentBestScore = score;
+                    bestPath = new List<int>(individual);
+                }
+                this.pathsChecked++;
+            }
+            this.InitialBestScore = currentBestScore; // Set InitialBestScore
 
             while (!hasConverged && generation < maxGenerations)
             {
                 totalScores = 0;
 
                 // Step 1: Crossover and mutate all members of the population
+                children.Clear();
                 for (int i = 0; i < populationCount; i += 2)
                 {
                     // Select parents
-                    string parent1 = population[i];
-                    string parent2 = population[(i + 1) % populationCount];
+                    var parent1 = population[i];
+                    var parent2 = population[(i + 1) % populationCount];
 
                     // Perform Ordered Crossover excluding the starting city
-                    string child1 = this.OrderedCrossover(parent1, parent2, startingCity);
-                    string child2 = this.OrderedCrossover(parent2, parent1, startingCity);
+                    var child1 = this.OrderedCrossover(parent1, parent2, startingCityIndex);
+                    var child2 = this.OrderedCrossover(parent2, parent1, startingCityIndex);
 
                     // Apply Swap Mutation
-                    child1 = this.SwapMutation(child1, mutationRate, startingCity);
-                    child2 = this.SwapMutation(child2, mutationRate, startingCity);
+                    child1 = this.SwapMutation(child1, mutationRate, startingCityIndex);
+                    child2 = this.SwapMutation(child2, mutationRate, startingCityIndex);
 
                     // Assign children to the new population
-                    children[i] = child1;
-                    children[i + 1] = child2;
+                    children.Add(child1);
+                    children.Add(child2);
 
                     // Calculate scores
-                    nextGenScores[i] = this.FindPathDistance(child1);
-                    nextGenScores[i + 1] = this.FindPathDistance(child2);
+                    nextGenScores[i] = this.CalculateRouteCost(child1);
+                    nextGenScores[i + 1] = this.CalculateRouteCost(child2);
 
                     totalScores += nextGenScores[i] + nextGenScores[i + 1];
 
@@ -93,14 +111,16 @@ namespace Thesis.Algorithms
                 }
 
                 // Sort the children based on scores (ascending)
-                Array.Sort(nextGenScores, children);
+                var sortedChildren = children.Zip(nextGenScores, (child, score) => new { Child = child, Score = score })
+                                             .OrderBy(cs => cs.Score)
+                                             .ToList();
 
                 // Update best score
-                if (nextGenScores[0] < currentBestScore)
+                if (sortedChildren[0].Score < currentBestScore)
                 {
                     dniCount = 0;
-                    currentBestScore = nextGenScores[0];
-                    bestPath = children[0];
+                    currentBestScore = sortedChildren[0].Score;
+                    bestPath = new List<int>(sortedChildren[0].Child);
                 }
                 else
                 {
@@ -119,28 +139,28 @@ namespace Thesis.Algorithms
                 // Preserve elites
                 for (int i = 0; i < eliteCount; i++)
                 {
-                    population.Add(children[i]);
+                    population.Add(sortedChildren[i].Child);
                 }
 
                 // Build roulette wheel for selection
-                double totalScoreInverse = nextGenScores.Sum(score => 1 / score);
+                double totalScoreInverse = sortedChildren.Sum(cs => 1 / cs.Score);
                 double[] cumulativeProbabilities = new double[populationCount];
-                cumulativeProbabilities[0] = (1 / nextGenScores[0]) / totalScoreInverse;
+                cumulativeProbabilities[0] = (1 / sortedChildren[0].Score) / totalScoreInverse;
 
                 for (int i = 1; i < populationCount; i++)
                 {
-                    cumulativeProbabilities[i] = cumulativeProbabilities[i - 1] + (1 / nextGenScores[i]) / totalScoreInverse;
+                    cumulativeProbabilities[i] = cumulativeProbabilities[i - 1] + (1 / sortedChildren[i].Score) / totalScoreInverse;
                 }
 
                 // Fill the rest of the population using roulette wheel selection
                 while (population.Count < populationCount)
                 {
-                    double randValue = rnd.NextDouble();
+                    double randValue = Utils.Random.NextDouble();
                     for (int i = 0; i < populationCount; i++)
                     {
                         if (randValue <= cumulativeProbabilities[i])
                         {
-                            population.Add(children[i]);
+                            population.Add(sortedChildren[i].Child);
                             break;
                         }
                     }
@@ -148,51 +168,34 @@ namespace Thesis.Algorithms
 
                 // Adjust mutation rate
                 mutationRate = dniCount < threshold / 2 ? 0.1 : 0.2;
+                this.MutationRate = mutationRate;
 
                 generation++;
+                this.TotalGenerations = generation;
             }
 
             stopWatch.Stop();
 
-            this.PaintPath = Utils.StringToIntArray(bestPath);
+            this.PaintPath = bestPath;
 
-            return (bestPath, currentBestScore, stopWatch.Elapsed);
+            string bestPathString = this.BuildPathString(bestPath);
+
+            return (bestPathString, currentBestScore, stopWatch.Elapsed);
         }
 
-        private static string GenerateRandomPath(int size, char startingCity)
+        private static List<int> GenerateRandomPath(int size, int startingCityIndex)
         {
-            var letters = new List<char>(size - 1);
-            var sb = new StringBuilder();
-            int temp;
-            char c;
-
-            // Exclude starting city from the letters
-            for (int i = 0; i < size; i++)
-            {
-                c = (char)(65 + i);
-                if (c != startingCity)
-                    letters.Add(c);
-            }
-
-            sb.Append(startingCity);
-
-            // Randomly arrange the remaining cities
-            while (letters.Count > 0)
-            {
-                temp = Utils.Random.Next(letters.Count);
-                c = letters[temp];
-                letters.RemoveAt(temp);
-                sb.Append(c);
-            }
-
-            sb.Append(startingCity); // Add starting city at the end
-
-            return sb.ToString();
+            var cities = Enumerable.Range(0, size).ToList();
+            cities.Remove(startingCityIndex);
+            var shuffledCities = cities.OrderBy(x => Utils.Random.Next()).ToList();
+            shuffledCities.Insert(0, startingCityIndex);
+            shuffledCities.Add(startingCityIndex); // Complete the cycle
+            return shuffledCities;
         }
 
-        private string OrderedCrossover(string parent1, string parent2, char startingCity)
+        private List<int> OrderedCrossover(List<int> parent1, List<int> parent2, int startingCityIndex)
         {
-            int size = parent1.Length - 2; // Exclude starting city at both ends
+            int size = parent1.Count - 2; // Exclude starting city at both ends
             int start = Utils.Random.Next(1, size + 1);
             int end = Utils.Random.Next(1, size + 1);
 
@@ -208,68 +211,48 @@ namespace Thesis.Algorithms
                 end = temp;
             }
 
-            // Extract substring from parent1
-            string substring = parent1.Substring(start, end - start + 1);
+            // Extract segment from parent1
+            var segment = parent1.GetRange(start, end - start + 1);
 
             // Exclude starting city from parent2
-            string p2 = parent2.Substring(1, parent2.Length - 2);
+            var p2 = parent2.GetRange(1, parent2.Count - 2);
 
-            // Remove the cities in substring from parent2
-            var remainingCities = p2.Where(c => !substring.Contains(c)).ToList();
+            // Remove the cities in the segment from parent2
+            var remainingCities = p2.Where(city => !segment.Contains(city)).ToList();
 
             // Build child sequence
-            var childBuilder = new StringBuilder();
-            childBuilder.Append(startingCity);
+            var child = new List<int>(new int[parent1.Count]);
+            child[0] = startingCityIndex;
+            child[^1] = startingCityIndex;
 
-            // Initialize child with nulls
-            char[] child = new char[size + 2];
-            child[0] = startingCity;
-            child[size + 1] = startingCity;
-
-            // Place substring into the child
+            // Place segment into the child
             for (int i = start; i <= end; i++)
             {
-                child[i] = substring[i - start];
+                child[i] = segment[i - start];
             }
 
             // Fill the remaining positions with cities from parent2
             int p2Index = 0;
-            for (int i = 1; i <= size; i++)
+            for (int i = 1; i < child.Count - 1; i++)
             {
-                if (child[i] == '\0')
+                if (child[i] == 0) // Assuming city indices are positive integers
                 {
-                    while (substring.Contains(p2[p2Index]))
-                    {
-                        p2Index++;
-                    }
-                    child[i] = p2[p2Index];
+                    child[i] = remainingCities[p2Index];
                     p2Index++;
                 }
             }
 
-            string childString = new string(child);
-
-            // Ensure the starting city is at both ends
-            if (childString[0] != startingCity)
-            {
-                childString = startingCity + childString.Substring(1);
-            }
-            if (childString[^1] != startingCity)
-            {
-                childString += startingCity;
-            }
-
-            return childString;
+            return child;
         }
 
-        private string SwapMutation(string path, double mutationRate, char startingCity)
+        private List<int> SwapMutation(List<int> path, double mutationRate, int startingCityIndex)
         {
             var rnd = Utils.Random;
             double chance = rnd.NextDouble();
 
             if (chance < mutationRate)
             {
-                int size = path.Length - 2; // Exclude starting city at both ends
+                int size = path.Count - 2; // Exclude starting city at both ends
                 int index1 = rnd.Next(1, size + 1);
                 int index2 = rnd.Next(1, size + 1);
 
@@ -278,18 +261,8 @@ namespace Thesis.Algorithms
                     index2 = rnd.Next(1, size + 1);
                 }
 
-                char[] chars = path.ToCharArray();
-
                 // Swap the cities at index1 and index2
-                char temp = chars[index1];
-                chars[index1] = chars[index2];
-                chars[index2] = temp;
-
-                // Ensure starting city is at both ends
-                chars[0] = startingCity;
-                chars[^1] = startingCity;
-
-                return new string(chars);
+                (path[index2], path[index1]) = (path[index1], path[index2]);
             }
 
             return path;

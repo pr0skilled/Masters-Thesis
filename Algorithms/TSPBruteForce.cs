@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
+﻿using System.Diagnostics;
 using System.Windows;
 
 namespace Thesis.Algorithms
@@ -11,7 +7,7 @@ namespace Thesis.Algorithms
 
     public class TSPBruteForce : TSPAlgorithmBase, ITSPAlgorithm
     {
-        private List<string> paths;
+        private List<List<int>> paths;
 
         public TSPBruteForce(List<Point> pointsGiven) : base(pointsGiven)
         {
@@ -20,60 +16,62 @@ namespace Thesis.Algorithms
 
         public override (string BestPath, double BestScore, TimeSpan ElapsedTime) Solve()
         {
-            string bestPath = string.Empty;
+            List<int> bestRoute = null;
 
             var stopWatch = new Stopwatch();
             stopWatch.Start();
             this.CalculateDistanceMatrix();
 
-            // Generate the base path (excluding the starting city at the end)
-            var basePath = new StringBuilder();
+            // Generate the list of city indices excluding the starting city (index 0)
+            var cityIndices = new List<int>();
             for (int i = 1; i < this.PointsGiven.Count; i++)
             {
-                basePath.Append((char)(65 + i));
+                cityIndices.Add(i);
             }
 
-            // The starting city is fixed at the beginning and end
-            char startingCity = 'A';
-
             // Generate all permutations of the intermediate cities
-            this.Permute(basePath.ToString(), 0, basePath.Length - 1);
+            this.Permute(cityIndices, 0, cityIndices.Count - 1);
 
             this.bestScore = double.MaxValue;
 
             foreach (var path in this.paths)
             {
-                // Construct the full path with the starting city at the beginning and end
-                string fullPath = startingCity + path + startingCity;
+                // Construct the full route with the starting city at the beginning and end
+                var fullRoute = new List<int> { 0 };
+                fullRoute.AddRange(path);
+                fullRoute.Add(0);
 
-                double newScore = this.FindPathDistance(fullPath);
+                double newScore = this.CalculateRouteCost(fullRoute);
                 if (newScore < this.bestScore)
                 {
                     this.bestScore = newScore;
-                    bestPath = fullPath;
+                    bestRoute = new List<int>(fullRoute);
                 }
             }
 
             stopWatch.Stop();
 
-            this.PaintPath = Utils.StringToIntArray(bestPath);
+            this.PaintPath = bestRoute;
 
-            return (bestPath, this.bestScore, stopWatch.Elapsed);
+            // Build the best path string using numbers
+            string bestPathString = this.BuildPathString(bestRoute);
+
+            return (bestPathString, this.bestScore, stopWatch.Elapsed);
         }
 
-        private void Permute(string str, int l, int r)
+        private void Permute(List<int> list, int l, int r)
         {
             if (l == r)
             {
-                this.paths.Add(str);
+                this.paths.Add(new List<int>(list));
             }
             else
             {
                 for (int i = l; i <= r; i++)
                 {
-                    str = Utils.Swap(str, l, i);
-                    this.Permute(str, l + 1, r);
-                    str = Utils.Swap(str, l, i); // backtrack
+                    Utils.Swap(list, l, i);
+                    this.Permute(list, l + 1, r);
+                    Utils.Swap(list, l, i); // backtrack
                 }
             }
         }

@@ -38,6 +38,8 @@ namespace Thesis.ViewModels
 
         private TSPCustomAlgorithm customAlgorithmInstance;
 
+        private ChartData chartData;
+
         public ObservableCollection<Point> UserCanvasPoints { get; set; } = [];
         public event PropertyChangedEventHandler? PropertyChanged;
         public event EventHandler<ConfirmationRequestEventArgs> ConfirmationRequested;
@@ -217,6 +219,16 @@ namespace Thesis.ViewModels
             }
         }
 
+        public ChartData ChartData
+        {
+            get => this.chartData;
+            set
+            {
+                this.chartData = value;
+                this.OnPropertyChanged(nameof(this.ChartData));
+            }
+        }
+
         #endregion
 
         #region Commands
@@ -242,6 +254,7 @@ namespace Thesis.ViewModels
         {
             this.UserCanvasPoints.CollectionChanged += UserCanvasPointsChanged;
             this.fileDialogService = fileDialogService;
+            this.chartData = new();
             this.rootDirectory = Path.Combine(Utils.GetSolutionDirectoryPath(), "Data");
             this.PointsGiven = [];
             this.SelectPointsFileCommand = new RelayCommand(this.SelectPointsFile);
@@ -319,6 +332,8 @@ namespace Thesis.ViewModels
 
             this.SliderVisibility = Visibility.Collapsed;
 
+            chartData.StartNewDataset();
+
             this.OnPropertyChanged(nameof(this.PointsGiven));
         }
 
@@ -335,8 +350,11 @@ namespace Thesis.ViewModels
             this.pointsGiven.Add(new Point(83, 82));
             this.pointsGiven.Add(new Point(140, 311));
             this.pointsGiven.Add(new Point(266, 286));
+            this.pointsGiven.Add(new Point(550, 421));
 
             this.SliderVisibility = Visibility.Collapsed;
+
+            chartData.StartNewDataset();
 
             this.OnPropertyChanged(nameof(this.PointsGiven));
         }
@@ -354,8 +372,12 @@ namespace Thesis.ViewModels
             this.pointsGiven.Add(new Point(213, 401));
             this.pointsGiven.Add(new Point(240, 470));
             this.pointsGiven.Add(new Point(150, 418));
+            this.pointsGiven.Add(new Point(179, 251));
+            this.pointsGiven.Add(new Point(30, 30));
 
             this.SliderVisibility = Visibility.Collapsed;
+
+            chartData.StartNewDataset();
 
             this.OnPropertyChanged(nameof(this.PointsGiven));
         }
@@ -386,13 +408,18 @@ namespace Thesis.ViewModels
             var algorithm = new TSPBruteForce(new List<Point>(this.PointsGiven));
             var result = algorithm.Solve();
 
+            this.chartData.AddRuntimeData(AlgorithmType.BruteForce, this.PointsGiven.Count, result.ElapsedTime.TotalMilliseconds);
+            this.chartData.AddCostData(AlgorithmType.BruteForce, result.BestScore);
+
             this.BestPathIndices = algorithm.PaintPath;
             this.BestPathString = result.BestPath;
             this.BestScore = result.BestScore;
             this.ElapsedTime = result.ElapsedTime;
 
+            int totalPaths = Utils.Factorial(this.PointsGiven.Count - 1);
+
             this.ResultsSummary = $"Brute Force: Best path = {this.BestPathString}, Best distance = {this.BestScore:F0}, RunTime = {this.ElapsedTime.TotalSeconds:F6} seconds";
-            this.CostSummary = $"Brute Force Cost vs 1000 paths- Best path = {this.BestPathString}, Best score = {this.BestScore:F0}";
+            this.CostSummary = $"Total possible paths: {totalPaths}";
 
             this.IsRunning = false;
         }
@@ -406,13 +433,20 @@ namespace Thesis.ViewModels
             var algorithm = new TSPSimulatedAnnealing(new List<Point>(this.PointsGiven));
             var result = algorithm.Solve();
 
+            this.chartData.AddRuntimeData(AlgorithmType.SA, this.PointsGiven.Count, result.ElapsedTime.TotalMilliseconds);
+            this.chartData.AddCostData(AlgorithmType.SA, result.BestScore);
+
             this.BestPathIndices = algorithm.PaintPath;
             this.BestPathString = result.BestPath;
             this.BestScore = result.BestScore;
             this.ElapsedTime = result.ElapsedTime;
 
+            double initialTemperature = algorithm.InitialTemperature;
+            double finalTemperature = algorithm.FinalTemperature;
+            int pathsChecked = algorithm.PathsChecked;
+
             this.ResultsSummary = $"Simulated Annealing: Best path = {this.BestPathString}, Best distance = {this.BestScore:F0}, RunTime = {this.ElapsedTime.TotalSeconds:F6} seconds";
-            this.CostSummary = $"SA Cost vs. temp step - Best path = {this.BestPathString}, Best score = {this.BestScore:F0}, Paths checked ({algorithm.PathsChecked}/{algorithm.TotalPaths}) = {(double)algorithm.PathsChecked * 100 / algorithm.TotalPaths:F2}%";
+            this.CostSummary = $"Total iterations: {algorithm.PathsChecked}. Initial temperature: {initialTemperature:F2}. Final temperature: {finalTemperature:F10}. Paths evaluated: {pathsChecked}";
 
             this.IsRunning = false;
         }
@@ -426,13 +460,16 @@ namespace Thesis.ViewModels
             var algorithm = new TSPGeneticAlgorithm(new List<Point>(this.PointsGiven));
             var result = algorithm.Solve();
 
+            this.chartData.AddRuntimeData(AlgorithmType.GA, this.PointsGiven.Count, result.ElapsedTime.TotalMilliseconds);
+            this.chartData.AddCostData(AlgorithmType.GA, result.BestScore);
+
             this.BestPathIndices = algorithm.PaintPath;
             this.BestPathString = result.BestPath;
             this.BestScore = result.BestScore;
             this.ElapsedTime = result.ElapsedTime;
 
             this.ResultsSummary = $"Genetic Algorithm: Best path = {this.BestPathString}, Best distance = {this.BestScore:F0}, RunTime = {this.ElapsedTime.TotalSeconds:F6} seconds";
-            this.CostSummary = $"GA Cost vs. temp step - Best path = {this.BestPathString}, Best score = {this.BestScore:F0}, Paths checked ({algorithm.PathsChecked}/{algorithm.TotalPaths}) = {(double)algorithm.PathsChecked * 100 / algorithm.TotalPaths:F2}%";
+            this.CostSummary = $"Total generations: {algorithm.TotalGenerations}. Population size: {algorithm.PopulationSize}. Final mutation rate: {algorithm.MutationRate:P}. Paths evaluated: {algorithm.PathsChecked}. Initial best score: {algorithm.InitialBestScore:F2}";
 
             this.IsRunning = false;
         }
@@ -446,13 +483,16 @@ namespace Thesis.ViewModels
             var algorithm = new TSPPrimsApproximation(new List<Point>(this.PointsGiven));
             var result = algorithm.Solve();
 
+            this.chartData.AddRuntimeData(AlgorithmType.Prims, this.PointsGiven.Count, result.ElapsedTime.TotalMilliseconds);
+            this.chartData.AddCostData(AlgorithmType.Prims, result.BestScore);
+
             this.BestPathIndices = algorithm.PaintPath;
             this.BestPathString = result.BestPath;
             this.BestScore = result.BestScore;
             this.ElapsedTime = result.ElapsedTime;
 
             this.ResultsSummary = $"Prim's Approx: Best path = {this.BestPathString}, Best distance = {this.BestScore:F0}, RunTime = {this.ElapsedTime.TotalSeconds:F6} seconds";
-            this.CostSummary = string.Empty;
+            this.CostSummary = $"Total MST cost: {algorithm.MSTCost:F2}. Number of nodes in MST: {algorithm.NumberOfNodes}.";
 
             this.IsRunning = false;
         }
@@ -463,6 +503,9 @@ namespace Thesis.ViewModels
 
             var algorithm = new TSPCustomAlgorithm(new List<Point>(this.PointsGiven));
             var result = algorithm.Solve();
+
+            this.chartData.AddRuntimeData(AlgorithmType.Custom, this.PointsGiven.Count, result.ElapsedTime.TotalMilliseconds);
+            this.chartData.AddCostData(AlgorithmType.Custom, result.BestScore);
 
             this.customAlgorithmInstance = algorithm;
 
@@ -480,7 +523,7 @@ namespace Thesis.ViewModels
             this.ElapsedTime = result.ElapsedTime;
 
             this.ResultsSummary = $"Custom Algorithm: Best path = {this.BestPathString}, Best distance = {this.BestScore:F0}, RunTime = {this.ElapsedTime.TotalSeconds:F6} seconds";
-            this.CostSummary = string.Empty;
+            this.CostSummary = $"Total steps: {algorithm.IntermediateRoutes.Count}. Pre-optimization route cost: {algorithm.PreOptimizationsRouteCost:F2}. Final route cost: {result.BestScore:F2}.";
 
             this.IsRunning = false;
         }
@@ -584,12 +627,17 @@ namespace Thesis.ViewModels
 
                 this.ClearCanvas();
 
+                chartData.StartNewDataset();
+
                 var regex = new Regex(@"\(-(\d+)-\)");
                 var match = regex.Match(filePath);
                 if (match.Success)
                 {
                     int.TryParse(match.Groups[1].Value, out int number);
                     this.optimalKnownScore = number;
+
+                    chartData.AddRuntimeData(AlgorithmType.BruteForce, this.PointsGiven.Count, -1);
+                    chartData.AddCostData(AlgorithmType.BruteForce, number);
                 }
 
                 this.OnPropertyChanged(nameof(this.PointsGiven));

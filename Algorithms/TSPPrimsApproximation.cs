@@ -14,6 +14,9 @@ namespace Thesis.Algorithms
         private List<Node> mst; // Minimum Spanning Tree
         private List<Node> q;   // Priority Queue for Prim's algorithm
 
+        public double MSTCost { get; private set; }
+        public int NumberOfNodes { get; private set; }
+
         public TSPPrimsApproximation(List<Point> pointsGiven) : base(pointsGiven)
         {
             this.mst = [];
@@ -22,32 +25,25 @@ namespace Thesis.Algorithms
 
         public override (string BestPath, double BestScore, TimeSpan ElapsedTime) Solve()
         {
-            char root;
-            string preTraversal;
             var stopWatch = new Stopwatch();
-            int rootIndex;
-            double distance;
-            Node u, p;
-
             stopWatch.Start();
 
             // 1) Calculate Distance Matrix
             this.CalculateDistanceMatrix();
 
             // Select a random vertex to be the root
-            rootIndex = Utils.Random.Next(this.PointsGiven.Count);
-            root = (char)('A' + rootIndex);
-            this.mst.Add(new Node { Name = root, Parent = '0', Children = "", Value = 0 });
-            // Console.WriteLine("Selecting '" + root + "' as root node of MST.");
+            int rootIndex = Utils.Random.Next(this.PointsGiven.Count);
+            int root = rootIndex;
+            this.mst.Add(new Node { Name = root, Parent = -1, Children = new List<int>(), Value = 0 });
+            // Console.WriteLine("Selecting '" + (root + 1) + "' as root node of MST.");
 
             // Populate Q with non-root nodes
             for (int i = 0; i < this.PointsGiven.Count; i++)
             {
                 if (i != rootIndex)
                 {
-                    char c = (char)('A' + i);
-                    distance = this.distanceMatrix[rootIndex, i];
-                    this.q.Add(new Node { Name = c, Parent = root, Children = "", Value = distance });
+                    double distance = this.distanceMatrix[rootIndex, i];
+                    this.q.Add(new Node { Name = i, Parent = root, Children = new List<int>(), Value = distance });
                 }
             }
 
@@ -58,25 +54,27 @@ namespace Thesis.Algorithms
                 this.q = this.q.OrderBy(node => node.Value).ToList();
 
                 // Take closest point (u), add to MST
-                u = this.q.First();
+                Node u = this.q.First();
                 this.mst.Add(u);
+
+                this.MSTCost += u.Value;
 
                 // Remove from Q
                 this.q.RemoveAt(0);
 
                 // Add its Name to its parent's Children
-                p = this.mst.Find(x => x.Name == u.Parent);
+                Node p = this.mst.Find(x => x.Name == u.Parent);
                 if (p != null)
                 {
-                    p.Children += u.Name.ToString();
+                    p.Children.Add(u.Name);
                 }
 
                 // Update distances for remaining points in Q
                 foreach (Node v in this.q)
                 {
-                    int uIndex = u.Name - 'A';
-                    int vIndex = v.Name - 'A';
-                    distance = this.distanceMatrix[uIndex, vIndex];
+                    int uIndex = u.Name;
+                    int vIndex = v.Name;
+                    double distance = this.distanceMatrix[uIndex, vIndex];
                     if (distance < v.Value)
                     {
                         // Update v's Parent and Value if closer to u
@@ -86,24 +84,26 @@ namespace Thesis.Algorithms
                 }
             }
 
+            this.NumberOfNodes = this.mst.Count;
+
             // Perform Preorder traversal of MST to get an approximate TSP path
-            preTraversal = this.PreOrder(this.mst.First(), this.mst);
+            List<int> traversal = this.PreOrder(this.mst.First(), this.mst);
 
             // Add the starting city at the end to complete the cycle
-            if (preTraversal[preTraversal.Length - 1] != preTraversal[0])
-            {
-                preTraversal += preTraversal[0];
-            }
+            traversal.Add(traversal[0]);
 
             // Calculate total distance of the tour
-            this.bestScore = this.FindPathDistance(preTraversal);
+            double totalCost = this.CalculateRouteCost(traversal);
 
             stopWatch.Stop();
 
-            // Convert path string to indices for drawing
-            this.PaintPath = Utils.StringToIntArray(preTraversal);
+            // Update PaintPath
+            this.PaintPath = traversal;
 
-            return (preTraversal, this.bestScore, stopWatch.Elapsed);
+            // Build the path string using numbers
+            string bestPathString = this.BuildPathString(traversal);
+
+            return (bestPathString, totalCost, stopWatch.Elapsed);
         }
 
         private void PrintNode(Node node, List<Node> T)
@@ -131,31 +131,21 @@ namespace Thesis.Algorithms
             }
         }
 
-        public string PreOrder(Node r, List<Node> nodes)
+        public List<int> PreOrder(Node node, List<Node> nodes)
         {
             // Recursive function for preorder traversal
-            var sb = new StringBuilder();
+            var route = new List<int> { node.Name };
 
-            sb.Append(r.Name);
-
-            foreach (char c in r.Children)
+            foreach (int childName in node.Children)
             {
-                Node child = nodes.Find(x => x.Name == c);
-                if (child != null)
+                Node childNode = nodes.Find(x => x.Name == childName);
+                if (childNode != null)
                 {
-                    sb.Append(this.PreOrder(child, nodes));
+                    route.AddRange(this.PreOrder(childNode, nodes));
                 }
             }
 
-            return sb.ToString();
+            return route;
         }
-    }
-
-    public class Node
-    {
-        public char Name { get; set; }
-        public char Parent { get; set; }
-        public string Children { get; set; }
-        public double Value { get; set; } // Distance value for sorting
     }
 }

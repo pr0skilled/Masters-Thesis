@@ -10,7 +10,11 @@ using OxyPlot.Series;
 
 namespace Thesis
 {
+    using OxyPlot.Axes;
+    using OxyPlot.Legends;
+
     using Utils;
+
     using ViewModels;
 
     public partial class MainWindow : Window
@@ -30,7 +34,7 @@ namespace Thesis
 
             this.viewModel.UserCanvasPoints.CollectionChanged += this.UserCanvasPoints_CollectionChanged;
 
-            this.costChart.Model = new PlotModel();
+            this.runtimeVsCitiesChart.Model = new PlotModel();
         }
 
         private void UserCanvasPoints_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -46,10 +50,19 @@ namespace Thesis
             if (e.PropertyName == nameof(MainViewModel.PointsGiven))
             {
                 this.Dispatcher.Invoke(this.DrawPoints);
+
+                if (this.percentageOfOptimalityChart != null)
+                {
+                    this.percentageOfOptimalityChart.Model = new();
+                    this.efficiencyChart.Model = new();
+                }
             }
             else if (e.PropertyName == nameof(MainViewModel.BestPathIndices))
             {
                 this.Dispatcher.Invoke(this.DrawPath);
+                this.Dispatcher.Invoke(this.PlotRuntimeVsNumberOfCities);
+                this.Dispatcher.Invoke(this.UpdatePercentageOfOptimalityChart);
+                this.Dispatcher.Invoke(this.UpdateEfficiencyChart);
             }
         }
 
@@ -93,9 +106,9 @@ namespace Thesis
                 // Create text for label
                 TextBlock text = new()
                 {
-                    Text = ((char)(65 + i)).ToString(),
+                    Text = (i + 1).ToString(),
                     Foreground = Brushes.Red,
-                    FontSize = 12, // Static font size
+                    FontSize = 10, // Static font size
                 };
 
                 // Measure the size of the text
@@ -210,37 +223,254 @@ namespace Thesis
             });
         }
 
-        public void PlotCostData(List<double> scores, string seriesName)
+        private void PlotRuntimeVsNumberOfCities()
         {
-            var plotModel = this.costChart.Model ?? new PlotModel { Title = "Cost Data" };
+            // Create a new PlotModel
+            var plotModel = new PlotModel { Title = "Runtime vs. Number of Cities" };
 
-            // Check if the series with the specified name already exists
-            var existingSeries = plotModel.Series
-                .OfType<LineSeries>()
-                .FirstOrDefault(s => s.Title == seriesName);
-
-            if (existingSeries == null)
+            // Configure the legend
+            plotModel.IsLegendVisible = true;
+            plotModel.Legends.Add(new Legend
             {
-                // Create a new series if it doesn't exist
-                var lineSeries = new LineSeries { Title = seriesName };
-                for (int i = 0; i < scores.Count; i++)
+                LegendTitle = "Algorithms",
+                LegendPosition = LegendPosition.RightTop,
+                LegendPlacement = LegendPlacement.Outside,
+                LegendOrientation = LegendOrientation.Vertical,
+                LegendBorderThickness = 0
+            });
+
+            // Create the axes
+            var xAxis = new LinearAxis
+            {
+                Position = AxisPosition.Bottom,
+                Title = "Number of Cities (n)",
+                MinimumPadding = 1,
+                AbsoluteMinimum = 0
+            };
+            plotModel.Axes.Add(xAxis);
+
+            var yAxis = new LinearAxis
+            {
+                Position = AxisPosition.Left,
+                Title = "Runtime (ms)",
+                MinimumPadding = 1,
+                AbsoluteMinimum = 0
+            };
+            plotModel.Axes.Add(yAxis);
+
+            // Iterate over all algorithms
+            foreach (var algorithmData in this.viewModel.ChartData.GetAllAlgorithmData())
+            {
+                // Combine and accumulate all datasets for city counts and runtimes
+                var combinedCityCounts = new List<int>();
+                var combinedRuntimes = new List<double>();
+
+                foreach (var datasetId in algorithmData.GetCityCountsKeys())
                 {
-                    lineSeries.Points.Add(new DataPoint(i, scores[i]));
+                    combinedCityCounts.AddRange(algorithmData.GetCityCounts(datasetId));
+                    combinedRuntimes.AddRange(algorithmData.GetRuntimes(datasetId));
                 }
+
+                if (combinedCityCounts.Count == 0 || combinedRuntimes.Count == 0)
+                    continue; // Skip if no data
+
+                var lineSeries = new LineSeries
+                {
+                    Title = algorithmData.Type.ToString(),
+                    MarkerType = MarkerType.Circle,
+                    MarkerSize = 4,
+                    MarkerStroke = OxyColors.Black
+                };
+
+                var dataPoints = combinedCityCounts.Zip(combinedRuntimes, (n, runtime) => new { n, runtime })
+                                                   .OrderBy(dp => dp.n);
+
+                foreach (var dp in dataPoints)
+                {
+                    lineSeries.Points.Add(new DataPoint(dp.n, dp.runtime));
+                }
+
                 plotModel.Series.Add(lineSeries);
             }
-            else
+
+            this.runtimeVsCitiesChart.Model = plotModel;
+        }
+
+        public void UpdatePercentageOfOptimalityChart()
+        {
+            // Create a new PlotModel
+            var plotModel = new PlotModel { Title = "Percentage of Optimal Cost" };
+
+            plotModel.IsLegendVisible = true;
+            plotModel.Legends.Add(new Legend
             {
-                // Update the points if the series exists
-                existingSeries.Points.Clear();
-                for (int i = 0; i < scores.Count; i++)
-                {
-                    existingSeries.Points.Add(new DataPoint(i, scores[i]));
-                }
+                LegendTitle = "Metrics",
+                LegendPosition = LegendPosition.RightTop,
+                LegendPlacement = LegendPlacement.Outside,
+                LegendOrientation = LegendOrientation.Vertical,
+                LegendBorderThickness = 0
+            });
+
+            // Create the category axis (X-axis)
+            var categoryAxis = new CategoryAxis { Position = AxisPosition.Left, Title = "Algorithms" };
+            plotModel.Axes.Add(categoryAxis);
+
+            // Create the value axis (Y-axis)
+            var valueAxis = new LinearAxis
+            {
+                Position = AxisPosition.Bottom,
+                Title = "Percentage of Optimal (%)",
+                MinimumPadding = 0,
+                AbsoluteMinimum = 0,
+                Maximum = 100 // Ensure the maximum is 100%
+            };
+            plotModel.Axes.Add(valueAxis);
+
+            // Retrieve the latest dataset for the Brute Force algorithm
+            var bruteForceCosts = this.viewModel.ChartData.GetLatestCosts().TryGetValue(AlgorithmType.BruteForce, out var costs) ? costs : null;
+
+            if (bruteForceCosts == null || bruteForceCosts.Count == 0)
+            {
+                // Handle the case where the optimal cost is not available
+                return;
             }
 
-            // Update the PlotView
-            this.costChart.Model = plotModel;
+            double optimalCost = bruteForceCosts.Min();
+
+            // Create BarSeries for best, worst, and average
+            var bestSeries = new BarSeries
+            {
+                Title = "Best",
+                LabelPlacement = LabelPlacement.Outside,
+                LabelFormatString = "{0:0.##}%",
+                FillColor = OxyColors.Green
+            };
+
+            var worstSeries = new BarSeries
+            {
+                Title = "Worst",
+                LabelPlacement = LabelPlacement.Outside,
+                LabelFormatString = "{0:0.##}%",
+                FillColor = OxyColors.Red
+            };
+
+            var avgSeries = new BarSeries
+            {
+                Title = "Average",
+                LabelPlacement = LabelPlacement.Outside,
+                LabelFormatString = "{0:0.##}%",
+                FillColor = OxyColors.Blue
+            };
+
+            // Clear labels to prevent issues
+            categoryAxis.Labels.Clear();
+
+            // Iterate over all algorithms and use the latest dataset
+            foreach (var algorithmData in this.viewModel.ChartData.GetAllAlgorithmData())
+            {
+                if (algorithmData.Type == AlgorithmType.BruteForce)
+                    continue; // Skip the Brute Force algorithm since it represents the optimal cost
+
+                // Get the latest costs for the algorithm
+                var latestCosts = this.viewModel.ChartData.GetLatestCosts().TryGetValue(algorithmData.Type, out var data) ? data : null;
+                if (latestCosts == null || latestCosts.Count == 0) continue;
+
+                double bestCost = latestCosts.Min();
+                double worstCost = latestCosts.Max();
+                double avgCost = latestCosts.Average();
+
+                double avgPercentageOfOptimal = 100.0 - ((avgCost - optimalCost) / optimalCost) * 100.0;
+                double worstPercentageOfOptimal = 100.0 - ((worstCost - optimalCost) / optimalCost) * 100.0;
+                double bestPercentageOfOptimal = 100.0 - ((bestCost - optimalCost) / optimalCost) * 100.0;
+
+                // Add algorithm name
+                categoryAxis.Labels.Add(algorithmData.Type.ToString());
+
+                // Add values to respective series
+                bestSeries.Items.Add(new BarItem { Value = bestPercentageOfOptimal });
+                worstSeries.Items.Add(new BarItem { Value = worstPercentageOfOptimal });
+                avgSeries.Items.Add(new BarItem { Value = avgPercentageOfOptimal });
+            }
+
+            // Add the series to the PlotModel
+            plotModel.Series.Add(bestSeries);
+            plotModel.Series.Add(worstSeries);
+            plotModel.Series.Add(avgSeries);
+
+            // Update the property
+            this.percentageOfOptimalityChart.Model = plotModel;
+        }
+
+        public void UpdateEfficiencyChart()
+        {
+            // Clear the existing model
+            this.efficiencyChart.Model = new PlotModel();
+
+            // Create a new PlotModel
+            var plotModel = new PlotModel { Title = "Algorithm Efficiency (Cost vs. Runtime)" };
+
+            // Configure legend
+            plotModel.Legends.Add(new Legend
+            {
+                LegendTitle = "Algorithms",
+                LegendPosition = LegendPosition.RightTop,
+                LegendPlacement = LegendPlacement.Outside,
+                LegendOrientation = LegendOrientation.Vertical,
+                LegendBorderThickness = 0
+            });
+
+            // Define axes
+            var xAxis = new LinearAxis
+            {
+                Position = AxisPosition.Bottom,
+                Title = "Runtime (ms)",
+                MinimumPadding = 1,
+                AbsoluteMinimum = 0
+            };
+            plotModel.Axes.Add(xAxis);
+
+            var yAxis = new LinearAxis
+            {
+                Position = AxisPosition.Left,
+                Title = "Cost",
+                MinimumPadding = 0.1,
+                AbsoluteMinimum = 0
+            };
+            plotModel.Axes.Add(yAxis);
+
+            // Retrieve the latest dataset for runtime and cost
+            var latestRuntimes = this.viewModel.ChartData.GetLatestRuntimes();
+            var latestCosts = this.viewModel.ChartData.GetLatestCosts();
+
+            foreach (var algorithmType in this.viewModel.ChartData.GetAllAlgorithmData().Select(a => a.Type))
+            {
+                if (!latestRuntimes.TryGetValue(algorithmType, out var runtimes) || !latestCosts.TryGetValue(algorithmType, out var costs))
+                {
+                    continue; // Skip algorithms without data
+                }
+
+                if (runtimes.Count == 0 || costs.Count == 0) continue;
+
+                // Create a series for the algorithm
+                var series = new ScatterSeries
+                {
+                    Title = algorithmType.ToString(),
+                    MarkerType = MarkerType.Circle,
+                    MarkerSize = 5
+                };
+
+                // Add data points to the series
+                for (int i = 0; i < Math.Min(runtimes.Count, costs.Count); i++)
+                {
+                    series.Points.Add(new ScatterPoint(runtimes[i], costs[i]));
+                }
+
+                // Add the series to the plot model
+                plotModel.Series.Add(series);
+            }
+
+            // Update the chart
+            this.efficiencyChart.Model = plotModel;
         }
     }
 }

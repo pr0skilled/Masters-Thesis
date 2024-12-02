@@ -1,16 +1,18 @@
 ﻿using System.Diagnostics;
-using System.Text;
 using System.Windows;
 
 namespace Thesis.Algorithms
 {
+    using Models;
+
     public class TSPCustomAlgorithm : TSPAlgorithmBase, ITSPAlgorithm
     {
         private int k;
 
         public List<List<int>> IntermediateRoutes { get; private set; }
+        public double PreOptimizationsRouteCost { get; private set; }
 
-        public TSPCustomAlgorithm(List<Point> pointsGiven, int k = 7) : base(pointsGiven)
+        public TSPCustomAlgorithm(List<Point> pointsGiven, int k = 5) : base(pointsGiven)
         {
             this.k = k;
             this.IntermediateRoutes = [];
@@ -126,6 +128,8 @@ namespace Thesis.Algorithms
                 this.IntermediateRoutes.Add(new List<int>(route));
             }
 
+            this.PreOptimizationsRouteCost = this.CalculateRouteCost(route) + this.distanceMatrix[route.Last(), route.First()];
+
             // **Optimization Phase**
 
             int n = route.Count;
@@ -160,17 +164,13 @@ namespace Thesis.Algorithms
                 }
             }
 
-            // Recalculate total cost and BestPath
-            double totalCost = CalculateRouteCost(route);
+            route.Add(route[0]);
 
-            var bestPathBuilder = new StringBuilder();
-            foreach (int cityIndex in route)
-            {
-                bestPathBuilder.Append((char)(cityIndex + 65));
-            }
-            // Close the route by returning to the starting city
-            bestPathBuilder.Append((char)(route[0] + 65));
-            string bestPath = bestPathBuilder.ToString();
+            // Recalculate total cost and BestPath
+            double totalCost = this.CalculateRouteCost(route);
+
+            // Build the best path string using numbers
+            string bestPath = this.BuildPathString(route);
 
             stopwatch.Stop();
 
@@ -198,31 +198,11 @@ namespace Thesis.Algorithms
             {
                 for (int i = l; i <= r; i++)
                 {
-                    Swap(list, l, i);
+                    Utils.Swap(list, l, i);
                     Permute(list, l + 1, r, result);
-                    Swap(list, l, i); // backtrack
+                    Utils.Swap(list, l, i); // backtrack
                 }
             }
-        }
-
-        private void Swap(List<int> list, int i, int j)
-        {
-            int temp = list[i];
-            list[i] = list[j];
-            list[j] = temp;
-        }
-
-        public double CalculateRouteCost(List<int> route)
-        {
-            double totalCost = 0;
-            int n = route.Count;
-            for (int i = 0; i < n; i++)
-            {
-                int city1 = route[i];
-                int city2 = route[(i + 1) % n]; // Ensure the route is a cycle
-                totalCost += this.distanceMatrix[city1, city2];
-            }
-            return totalCost;
         }
     }
 }

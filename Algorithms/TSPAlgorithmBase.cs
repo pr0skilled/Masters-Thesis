@@ -1,83 +1,69 @@
 ﻿using System.Text;
 using System.Windows;
+using System;
 
-namespace Thesis.Algorithms;
-
-public abstract class TSPAlgorithmBase : ITSPAlgorithm
+namespace Thesis.Algorithms
 {
-    protected int numberOfPoints;
-    protected double[,] distanceMatrix;
-    protected double bestScore;
-
-    public List<Point> PointsGiven { get; private set; }
-    public List<int> PaintPath { get; set; }
-
-    public TSPAlgorithmBase(List<Point> pointsGiven)
+    public abstract class TSPAlgorithmBase : ITSPAlgorithm
     {
-        this.PointsGiven = pointsGiven;
-        this.PaintPath = [];
-        this.distanceMatrix = new double[pointsGiven.Count, pointsGiven.Count];
-    }
+        protected double[,] distanceMatrix;
+        protected double bestScore;
 
-    public abstract (string BestPath, double BestScore, TimeSpan ElapsedTime) Solve();
+        public List<Point> PointsGiven { get; private set; }
+        public List<int> PaintPath { get; set; }
 
-    protected int CalculateDistanceMatrix()
-    {
-        int max = 0;
-        ///Calculate the distances between all points in the graph
-        for (int i = 0; i < this.PointsGiven.Count; i++)
+        public TSPAlgorithmBase(List<Point> pointsGiven)
         {
-            for (int j = this.PointsGiven.Count - 1; j > i; j--)
-            {
-                if (i != j)
-                {
+            this.PointsGiven = pointsGiven;
+            this.PaintPath = [];
+            this.distanceMatrix = new double[pointsGiven.Count, pointsGiven.Count];
+        }
 
-                    this.distanceMatrix[i, j] = this.FindPointDistance(this.PointsGiven[i], this.PointsGiven[j]);
-                    this.distanceMatrix[j, i] = this.distanceMatrix[i, j];
-                    if (this.distanceMatrix[i, j] > max)
-                    {
-                        max = (int)this.distanceMatrix[i, j];
-                    }
-                }
-                else
+        public abstract (string BestPath, double BestScore, TimeSpan ElapsedTime) Solve();
+
+        protected void CalculateDistanceMatrix()
+        {
+            int count = this.PointsGiven.Count;
+            for (int i = 0; i < count; i++)
+            {
+                for (int j = i; j < count; j++)
                 {
-                    this.distanceMatrix[i, j] = 0;
+                    if (i == j)
+                    {
+                        this.distanceMatrix[i, j] = 0;
+                    }
+                    else
+                    {
+                        double distance = FindPointDistance(this.PointsGiven[i], this.PointsGiven[j]);
+                        this.distanceMatrix[i, j] = distance;
+                        this.distanceMatrix[j, i] = distance;
+                    }
                 }
             }
         }
 
-        return max;
-    }
-
-    protected double FindPointDistance(Point a, Point b)
-    {
-        return Math.Sqrt(Math.Pow((a.X - b.X), 2) + Math.Pow((a.Y - b.Y), 2));
-    }
-
-    protected double FindPathDistance(string path)
-    {
-        double distance = 0;
-        int first, second;
-        int length = path.Length;
-
-        for (int i = 0; i < length; i++)
+        protected double FindPointDistance(Point a, Point b)
         {
-            first = path[i % length] - 65;
-            second = path[(i + 1) % length] - 65;
-            distance += this.distanceMatrix[first, second];
+            return Math.Sqrt(Math.Pow((a.X - b.X), 2) + Math.Pow((a.Y - b.Y), 2));
         }
 
-        return distance;
-    }
-
-    public string BuildPathString(List<int> route)
-    {
-        var bestPathBuilder = new StringBuilder();
-        foreach (int cityIndex in route)
+        public double CalculateRouteCost(List<int> route)
         {
-            bestPathBuilder.Append((char)(cityIndex + 65));
+            double totalCost = 0;
+            int n = route.Count;
+            for (int i = 0; i < n - 1; i++)
+            {
+                int city1 = route[i];
+                int city2 = route[i + 1];
+                totalCost += this.distanceMatrix[city1, city2];
+            }
+            return totalCost;
         }
-        bestPathBuilder.Append((char)(route[0] + 65));
-        return bestPathBuilder.ToString();
+
+        public string BuildPathString(List<int> route)
+        {
+            var bestPath = string.Join("->", route.Select(r => r + 1));
+            return bestPath;
+        }
     }
 }

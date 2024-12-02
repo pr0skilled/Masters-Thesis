@@ -7,15 +7,9 @@ namespace Thesis.Models
     {
         public static Random Random = new();
 
-        public static string Swap(string a, int i, int j)
+        public static void Swap(List<int> list, int i, int j)
         {
-            char temp;
-            char[] charArray = a.ToCharArray();
-            temp = charArray[i];
-            charArray[i] = charArray[j];
-            charArray[j] = temp;
-            string s = new(charArray);
-            return s;
+            (list[j], list[i]) = (list[i], list[j]);
         }
 
         public static int Factorial(int n)
@@ -74,11 +68,16 @@ namespace Thesis.Models
         public static List<int> StringToIntArray(string path)
         {
             var indices = new List<int>();
-            foreach (char c in path)
+            var tokens = path.Split(new[] { "->" }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var token in tokens)
             {
-                indices.Add(c - 65);
+                if (int.TryParse(token, out int index))
+                {
+                    indices.Add(index - 1);
+                }
             }
             return indices;
         }
+
     }
 }

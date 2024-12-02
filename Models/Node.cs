@@ -2,19 +2,16 @@
 {
     public class Node
     {
-        public char Name { get; set; }
-
-        public char Parent { get; set; }
-
-        public string? Children { get; set; }
-
-        public double Value { get; set; }
+        public int Name { get; set; } // City index
+        public int Parent { get; set; } // Parent city index (-1 for root)
+        public List<int> Children { get; set; } // List of child city indices
+        public double Value { get; set; } // Distance value for sorting
 
         public Node()
         {
         }
 
-        public Node(char name, char parent, double value = 0)
+        public Node(int name, int parent, double value = 0)
         {
             this.Name = name;
             this.Parent = parent;
