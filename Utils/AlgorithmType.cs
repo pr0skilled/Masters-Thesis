@@ -6,6 +6,7 @@
         SA,
         GA,
         Prims,
+        ConvexHull,
         Custom
     }
 }

@@ -3,29 +3,24 @@ using System.Windows;
 
 namespace Thesis.Algorithms
 {
-    using Models;
-
     public class TSPCustomAlgorithm : TSPAlgorithmBase, ITSPAlgorithm
     {
-        private int k;
-
         public List<List<int>> IntermediateRoutes { get; private set; }
         public double PreOptimizationsRouteCost { get; private set; }
 
-        public TSPCustomAlgorithm(List<Point> pointsGiven, int k = 5) : base(pointsGiven)
+        public TSPCustomAlgorithm(List<Point> pointsGiven) : base(pointsGiven)
         {
-            this.k = k;
             this.IntermediateRoutes = [];
         }
 
         public override (string BestPath, double BestScore, TimeSpan ElapsedTime) Solve()
         {
             var stopwatch = new Stopwatch();
-            stopwatch.Start();
 
             // Calculate the distance matrix
             this.CalculateDistanceMatrix();
 
+            stopwatch.Start();
             // **Initial Route Construction Phase**
 
             // Find East, North, West, and South cities
@@ -82,49 +77,53 @@ namespace Thesis.Algorithms
             }
 
             // Initialize Open list
-            var openCities = new List<int>();
-            for (int i = 0; i < this.PointsGiven.Count; i++)
+            var openCitiesQueue = new PriorityQueue<int, double>();
+            foreach (var cityIndex in Enumerable.Range(0, this.PointsGiven.Count).Where(i => !visited[i]))
             {
-                if (!visited[i])
-                {
-                    openCities.Add(i);
-                }
+                openCitiesQueue.Enqueue(cityIndex, this.distanceMatrix[route.Last(), cityIndex]);
             }
 
-            // While Open is not empty
-            while (openCities.Count > 0)
+            // While Open Cities Queue is not empty
+            while (openCitiesQueue.Count > 0)
             {
-                double bestCost = double.MaxValue;
-                List<int>? bestRoute = null;
-                int bestCityIndex = -1;
+                // Narrow down to top candidates
+                var narrowedOpenCities = openCitiesQueue.UnorderedItems
+                    .OrderBy(item => item.Priority)
+                    .Take(10) // Adjust subset size
+                    .Select(item => item.Element)
+                    .ToList();
 
-                // For each city in Open
-                foreach (int cityIndex in openCities)
-                {
-                    // For each possible insertion position
-                    for (int position = 0; position <= route.Count; position++)
+                var (City, Route, Cost) = narrowedOpenCities.AsParallel()
+                    .Select(cityIndex =>
                     {
-                        var newRoute = new List<int>(route);
-                        newRoute.Insert(position, cityIndex);
+                        double localBestCost = double.MaxValue;
+                        List<int>? localBestRoute = null;
 
-                        // Calculate the cost of the new route
-                        double cost = CalculateRouteCost(newRoute);
-
-                        if (cost < bestCost)
+                        foreach (var position in Enumerable.Range(0, route.Count + 1))
                         {
-                            bestCost = cost;
-                            bestRoute = newRoute;
-                            bestCityIndex = cityIndex;
+                            var newRoute = new List<int>(route);
+                            newRoute.Insert(position, cityIndex);
+                            double cost = this.CalculateRouteCost(newRoute);
+
+                            if (cost < localBestCost)
+                            {
+                                localBestCost = cost;
+                                localBestRoute = newRoute;
+                            }
                         }
-                    }
-                }
 
-                // Update Route and Visited status
-                route = bestRoute;
-                visited[bestCityIndex] = true;
-                openCities.Remove(bestCityIndex);
+                        return (City: cityIndex, Route: localBestRoute, Cost: localBestCost);
+                    })
+                    .OrderBy(result => result.Cost)
+                    .First();
 
-                // Add the updated route to IntermediateRoutes
+                route = Route;
+                visited[City] = true;
+
+                // Remove City from openCitiesQueue
+                openCitiesQueue = new PriorityQueue<int, double>(openCitiesQueue.UnorderedItems
+                    .Where(item => item.Element != City));
+
                 this.IntermediateRoutes.Add(new List<int>(route));
             }
 
@@ -132,47 +131,16 @@ namespace Thesis.Algorithms
 
             // **Optimization Phase**
 
-            int n = route.Count;
-            for (int i = 0; i <= n - k; i++)
-            {
-                var segment = route.GetRange(i, k);
-                var permutations = GetPermutations(segment);
-                double bestCost = double.MaxValue;
-                List<int>? bestSegment = null;
-
-                foreach (var perm in permutations)
-                {
-                    var newRoute = new List<int>(route);
-                    newRoute.RemoveRange(i, k);
-                    newRoute.InsertRange(i, perm);
-
-                    double cost = CalculateRouteCost(newRoute);
-                    if (cost < bestCost)
-                    {
-                        bestCost = cost;
-                        bestSegment = new List<int>(perm);
-                    }
-                }
-
-                if (bestSegment != null && !bestSegment.SequenceEqual(route.GetRange(i, k)))
-                {
-                    route.RemoveRange(i, k);
-                    route.InsertRange(i, bestSegment);
-
-                    // Add the updated route to IntermediateRoutes
-                    this.IntermediateRoutes.Add(new List<int>(route));
-                }
-            }
+            this.ReinsertionOptimization(route);
 
             route.Add(route[0]);
+            stopwatch.Stop();
 
             // Recalculate total cost and BestPath
             double totalCost = this.CalculateRouteCost(route);
 
             // Build the best path string using numbers
             string bestPath = this.BuildPathString(route);
-
-            stopwatch.Stop();
 
             // Update PaintPath and bestScore
             this.PaintPath = new List<int>(route);
@@ -181,26 +149,43 @@ namespace Thesis.Algorithms
             return (bestPath, this.bestScore, stopwatch.Elapsed);
         }
 
-        private List<List<int>> GetPermutations(List<int> list)
+        private void ReinsertionOptimization(List<int> route)
         {
-            var result = new List<List<int>>();
-            Permute(list, 0, list.Count - 1, result);
-            return result;
-        }
+            bool improvement = true;
 
-        private void Permute(List<int> list, int l, int r, List<List<int>> result)
-        {
-            if (l == r)
+            while (improvement)
             {
-                result.Add(new List<int>(list));
-            }
-            else
-            {
-                for (int i = l; i <= r; i++)
+                improvement = false;
+
+                for (int i = 0; i < route.Count; i++)
                 {
-                    Utils.Swap(list, l, i);
-                    Permute(list, l + 1, r, result);
-                    Utils.Swap(list, l, i); // backtrack
+                    int city = route[i];
+                    route.RemoveAt(i);
+
+                    double bestCost = double.MaxValue;
+                    int bestPosition = -1;
+
+                    for (int j = 0; j <= route.Count; j++)
+                    {
+                        var newRoute = new List<int>(route);
+                        newRoute.Insert(j, city);
+                        double cost = this.CalculateRouteCost(newRoute);
+
+                        if (cost < bestCost)
+                        {
+                            bestCost = cost;
+                            bestPosition = j;
+                        }
+                    }
+
+                    route.Insert(bestPosition, city);
+                    if (this.CalculateRouteCost(route) < bestCost)
+                    {
+                        improvement = true;
+
+                        // Add the updated route to IntermediateRoutes
+                        this.IntermediateRoutes.Add(new List<int>(route));
+                    }
                 }
             }
         }

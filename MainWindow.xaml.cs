@@ -19,22 +19,34 @@ namespace Thesis
 
     public partial class MainWindow : Window
     {
-        const int POINT_SIZE = 15;
+        private const int POINT_SIZE = 15;
+
+        private const double maxScale = 3.0; // Prevent excessive zooming in
 
         private MainViewModel viewModel;
+
+        private Point _scrollStartPoint;
+        private double _horizontalOffsetStart;
+        private double _verticalOffsetStart;
 
         public MainWindow()
         {
             this.InitializeComponent();
 
-            this.viewModel = new(new FileDialogService());
+            this.viewModel = new(new FileDialogService(), this.drawingCanvas.Height, this.drawingCanvas.Width);
             this.DataContext = this.viewModel;
             this.viewModel.PropertyChanged += this.ViewModel_PropertyChanged;
             this.viewModel.ConfirmationRequested += this.ViewModel_ConfirmationRequested;
 
             this.viewModel.UserCanvasPoints.CollectionChanged += this.UserCanvasPoints_CollectionChanged;
 
-            this.runtimeVsCitiesChart.Model = new PlotModel();
+            this.scrollViewer.PreviewMouseWheel += this.ScrollViewer_PreviewMouseWheel;
+
+            var scaleTransform = new ScaleTransform();
+            var transformGroup = new TransformGroup();
+            transformGroup.Children.Add(scaleTransform);
+            this.drawingCanvas.LayoutTransform = transformGroup;
+            this.scrollViewer.CanContentScroll = false;
         }
 
         private void UserCanvasPoints_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -55,6 +67,7 @@ namespace Thesis
                 {
                     this.percentageOfOptimalityChart.Model = new();
                     this.efficiencyChart.Model = new();
+                    this.runtimeSummaryChart.Model = new();
                 }
             }
             else if (e.PropertyName == nameof(MainViewModel.BestPathIndices))
@@ -63,6 +76,7 @@ namespace Thesis
                 this.Dispatcher.Invoke(this.PlotRuntimeVsNumberOfCities);
                 this.Dispatcher.Invoke(this.UpdatePercentageOfOptimalityChart);
                 this.Dispatcher.Invoke(this.UpdateEfficiencyChart);
+                this.Dispatcher.Invoke(this.UpdateRuntimeSummaryChart);
             }
         }
 
@@ -193,6 +207,28 @@ namespace Thesis
             }
         }
 
+        private void ScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (Keyboard.Modifiers == ModifierKeys.Control) // Zoom if Ctrl is pressed
+            {
+                e.Handled = true; // Prevent ScrollViewer from scrolling
+                this.Canvas_MouseWheel(this.drawingCanvas, e); // Pass the event to the Canvas for zooming
+            }
+        }
+
+        private void Canvas_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                e.Handled = true;
+                var scaleTransform = ((TransformGroup)this.drawingCanvas.LayoutTransform).Children.OfType<ScaleTransform>().First();
+                var zoomFactor = e.Delta > 0 ? 1.1 : 0.9;
+                var newScale = Math.Clamp(scaleTransform.ScaleX * zoomFactor, 0.01, maxScale);
+                scaleTransform.ScaleX = newScale;
+                scaleTransform.ScaleY = newScale;
+            }
+        }
+
         private void DrawCanvasPoints()
         {
             this.drawingCanvas.Children.Clear();
@@ -283,6 +319,7 @@ namespace Thesis
                 };
 
                 var dataPoints = combinedCityCounts.Zip(combinedRuntimes, (n, runtime) => new { n, runtime })
+                                                   .Where(dp => dp.runtime > 0)
                                                    .OrderBy(dp => dp.n);
 
                 foreach (var dp in dataPoints)
@@ -338,28 +375,31 @@ namespace Thesis
             double optimalCost = bruteForceCosts.Min();
 
             // Create BarSeries for best, worst, and average
-            var bestSeries = new BarSeries
+            var bestSeries = new CustomBarSeries
             {
                 Title = "Best",
                 LabelPlacement = LabelPlacement.Outside,
                 LabelFormatString = "{0:0.##}%",
-                FillColor = OxyColors.Green
+                FillColor = OxyColors.Green,
+                TrackerFormatString = "{0} {1}: {2}% Cost: {3}" // No ±{4} here
             };
 
-            var worstSeries = new BarSeries
+            var worstSeries = new CustomBarSeries
             {
                 Title = "Worst",
                 LabelPlacement = LabelPlacement.Outside,
                 LabelFormatString = "{0:0.##}%",
-                FillColor = OxyColors.Red
+                FillColor = OxyColors.Red,
+                TrackerFormatString = "{0} {1}: {2}% Cost: {3}" // No ±{4} here
             };
 
-            var avgSeries = new BarSeries
+            var avgSeries = new CustomBarSeries
             {
                 Title = "Average",
                 LabelPlacement = LabelPlacement.Outside,
                 LabelFormatString = "{0:0.##}%",
-                FillColor = OxyColors.Blue
+                FillColor = OxyColors.Blue,
+                TrackerFormatString = "{0} {1}: {2}% Cost: {3} {4}" // Include ±{4} here
             };
 
             // Clear labels to prevent issues
@@ -378,6 +418,7 @@ namespace Thesis
                 double bestCost = latestCosts.Min();
                 double worstCost = latestCosts.Max();
                 double avgCost = latestCosts.Average();
+                double stdDev = Math.Sqrt(latestCosts.Average(v => Math.Pow(v - avgCost, 2))); // Only for avgSeries
 
                 double avgPercentageOfOptimal = 100.0 - ((avgCost - optimalCost) / optimalCost) * 100.0;
                 double worstPercentageOfOptimal = 100.0 - ((worstCost - optimalCost) / optimalCost) * 100.0;
@@ -387,9 +428,9 @@ namespace Thesis
                 categoryAxis.Labels.Add(algorithmData.Type.ToString());
 
                 // Add values to respective series
-                bestSeries.Items.Add(new BarItem { Value = bestPercentageOfOptimal });
-                worstSeries.Items.Add(new BarItem { Value = worstPercentageOfOptimal });
-                avgSeries.Items.Add(new BarItem { Value = avgPercentageOfOptimal });
+                bestSeries.AddBarItemWithCost(new BarItem { Value = bestPercentageOfOptimal }, bestCost);
+                worstSeries.AddBarItemWithCost(new BarItem { Value = worstPercentageOfOptimal }, worstCost);
+                avgSeries.AddBarItemWithCost(new BarItem { Value = avgPercentageOfOptimal }, avgCost, stdDev); // Pass stdDev
             }
 
             // Add the series to the PlotModel
@@ -407,7 +448,7 @@ namespace Thesis
             this.efficiencyChart.Model = new PlotModel();
 
             // Create a new PlotModel
-            var plotModel = new PlotModel { Title = "Algorithm Efficiency (Cost vs. Runtime)" };
+            var plotModel = new PlotModel { Title = "Algorithm Efficiency" };
 
             // Configure legend
             plotModel.Legends.Add(new Legend
@@ -462,7 +503,10 @@ namespace Thesis
                 // Add data points to the series
                 for (int i = 0; i < Math.Min(runtimes.Count, costs.Count); i++)
                 {
-                    series.Points.Add(new ScatterPoint(runtimes[i], costs[i]));
+                    if (runtimes[i] > 0)
+                    {
+                        series.Points.Add(new ScatterPoint(runtimes[i], costs[i]));
+                    }
                 }
 
                 // Add the series to the plot model
@@ -471,6 +515,99 @@ namespace Thesis
 
             // Update the chart
             this.efficiencyChart.Model = plotModel;
+        }
+
+        public void UpdateRuntimeSummaryChart()
+        {
+            // Create a new PlotModel
+            var plotModel = new PlotModel { Title = "Runtime Summary" };
+
+            plotModel.IsLegendVisible = true;
+            plotModel.Legends.Add(new Legend
+            {
+                LegendTitle = "Metrics",
+                LegendPosition = LegendPosition.RightTop,
+                LegendPlacement = LegendPlacement.Outside,
+                LegendOrientation = LegendOrientation.Vertical,
+                LegendBorderThickness = 0
+            });
+
+            // Create the category axis (X-axis)
+            var categoryAxis = new CategoryAxis { Position = AxisPosition.Left, Title = "Algorithms" };
+            plotModel.Axes.Add(categoryAxis);
+
+            // Create the value axis (Y-axis)
+            var valueAxis = new LinearAxis
+            {
+                Position = AxisPosition.Bottom,
+                Title = "Runtime (ms)",
+                MinimumPadding = 0,
+                AbsoluteMinimum = 0
+            };
+            plotModel.Axes.Add(valueAxis);
+
+            // Create BarSeries for best, worst, and average runtimes
+            var bestSeries = new BarSeries
+            {
+                Title = "Best",
+                LabelPlacement = LabelPlacement.Outside,
+                LabelFormatString = "{0:0.##} ms",
+                FillColor = OxyColors.Green,
+                TrackerFormatString = "{0} {1}: {2} ms"
+            };
+
+            var worstSeries = new BarSeries
+            {
+                Title = "Worst",
+                LabelPlacement = LabelPlacement.Outside,
+                LabelFormatString = "{0:0.##} ms",
+                FillColor = OxyColors.Red,
+                TrackerFormatString = "{0} {1}: {2} ms"
+            };
+
+            var avgSeries = new CustomBarSeries
+            {
+                Title = "Average",
+                LabelPlacement = LabelPlacement.Outside,
+                LabelFormatString = "{0:0.##} ms",
+                FillColor = OxyColors.Blue,
+                TrackerFormatString = "{0} {1}: {2} ms ±{4}"
+            };
+
+            // Clear labels to prevent issues
+            categoryAxis.Labels.Clear();
+
+            // Retrieve the latest runtime data
+            var latestRuntimes = this.viewModel.ChartData.GetLatestRuntimes();
+
+            // Iterate over the latest runtime data
+            foreach (var algorithmType in latestRuntimes.Keys)
+            {
+                if (!latestRuntimes.TryGetValue(algorithmType, out var runtimes) || runtimes.Count == 0) continue;
+
+                if (runtimes.Any(x => x <= 0)) continue;
+
+                double bestRuntime = runtimes.Min();
+                double worstRuntime = runtimes.Max();
+                double avgRuntime = runtimes.Average();
+                double stdDev = Math.Sqrt(runtimes.Average(v => Math.Pow(v - avgRuntime, 2))); // Standard deviation for avgSeries
+
+                // Add algorithm name
+                categoryAxis.Labels.Add(algorithmType.ToString());
+
+                // Add values to respective series
+                bestSeries.Items.Add(new BarItem { Value = bestRuntime });
+                worstSeries.Items.Add(new BarItem { Value = worstRuntime });
+                avgSeries.AddBarItemWithCost(new BarItem { Value = avgRuntime }, avgRuntime, stdDev); // Include stdDev
+            }
+
+            // Add the series to the PlotModel
+            plotModel.Series.Add(bestSeries);
+            plotModel.Series.Add(worstSeries);
+            plotModel.Series.Add(avgSeries);
+
+            // Update the chart
+            this.runtimeSummaryChart.Model = plotModel;
         }
     }
 }

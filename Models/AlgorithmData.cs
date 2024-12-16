@@ -21,69 +21,69 @@ namespace Thesis.Models
         // Methods to add data to a specific dataset
         public void AddCostData(int datasetId, double cost)
         {
-            if (!costDatasets.ContainsKey(datasetId))
-                costDatasets[datasetId] = new List<double>();
-            costDatasets[datasetId].Add(cost);
+            if (!this.costDatasets.ContainsKey(datasetId))
+                this.costDatasets[datasetId] = new List<double>();
+            this.costDatasets[datasetId].Add(cost);
         }
 
         public void AddRuntimeData(int datasetId, double runtime)
         {
-            if (!runtimeDatasets.ContainsKey(datasetId))
-                runtimeDatasets[datasetId] = new List<double>();
-            runtimeDatasets[datasetId].Add(runtime);
+            if (!this.runtimeDatasets.ContainsKey(datasetId))
+                this.runtimeDatasets[datasetId] = new List<double>();
+            this.runtimeDatasets[datasetId].Add(runtime);
         }
 
         public void AddIterationData(int datasetId, double iteration)
         {
-            if (!iterationDatasets.ContainsKey(datasetId))
-                iterationDatasets[datasetId] = new List<double>();
-            iterationDatasets[datasetId].Add(iteration);
+            if (!this.iterationDatasets.ContainsKey(datasetId))
+                this.iterationDatasets[datasetId] = new List<double>();
+            this.iterationDatasets[datasetId].Add(iteration);
         }
 
         public void AddCityCountData(int datasetId, int cityCount)
         {
-            if (!cityCountDatasets.ContainsKey(datasetId))
-                cityCountDatasets[datasetId] = new List<int>();
-            cityCountDatasets[datasetId].Add(cityCount);
+            if (!this.cityCountDatasets.ContainsKey(datasetId))
+                this.cityCountDatasets[datasetId] = new List<int>();
+            this.cityCountDatasets[datasetId].Add(cityCount);
         }
 
         // Methods to retrieve the latest dataset
         public List<double> GetCosts(int datasetId)
         {
-            return costDatasets.TryGetValue(datasetId, out var costs) ? costs : new List<double>();
+            return this.costDatasets.TryGetValue(datasetId, out var costs) ? costs : new List<double>();
         }
 
         public List<double> GetRuntimes(int datasetId)
         {
-            return runtimeDatasets.TryGetValue(datasetId, out var runtimes) ? runtimes : new List<double>();
+            return this.runtimeDatasets.TryGetValue(datasetId, out var runtimes) ? runtimes : new List<double>();
         }
 
         public List<double> GetIterations(int datasetId)
         {
-            return iterationDatasets.TryGetValue(datasetId, out var iterations) ? iterations : new List<double>();
+            return this.iterationDatasets.TryGetValue(datasetId, out var iterations) ? iterations : new List<double>();
         }
 
         public List<int> GetCityCounts(int datasetId)
         {
-            return cityCountDatasets.TryGetValue(datasetId, out var count) ? count : new List<int>();
+            return this.cityCountDatasets.TryGetValue(datasetId, out var count) ? count : new List<int>();
         }
 
         public IEnumerable<int> GetCityCountsKeys()
         {
-            return cityCountDatasets.Keys;
+            return this.cityCountDatasets.Keys;
         }
 
         public IEnumerable<int> GetRuntimesKeys()
         {
-            return runtimeDatasets.Keys;
+            return this.runtimeDatasets.Keys;
         }
 
         // Clear all data
         public void ClearAllData()
         {
-            costDatasets.Clear();
-            runtimeDatasets.Clear();
-            iterationDatasets.Clear();
+            this.costDatasets.Clear();
+            this.runtimeDatasets.Clear();
+            this.iterationDatasets.Clear();
         }
     }
 }

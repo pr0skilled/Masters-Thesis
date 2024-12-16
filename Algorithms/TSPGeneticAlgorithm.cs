@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 
 namespace Thesis.Algorithms
@@ -7,265 +9,188 @@ namespace Thesis.Algorithms
 
     public class TSPGeneticAlgorithm : TSPAlgorithmBase, ITSPAlgorithm
     {
-        private int pathsChecked;
-        private int totalPaths;
-
-        public int PathsChecked => this.pathsChecked;
-        public int TotalPaths => this.totalPaths;
-
-        public int TotalGenerations { get; private set; }
-        public int PopulationSize { get; private set; }
-        public double MutationRate { get; private set; }
-        public double InitialBestScore { get; private set; }
+        private int populationSize;
+        private int generations;
+        private double temperature;
+        private const int CoolingRate = 90; // Cooling rate for simulated annealing
+        private const double ElitismRate = 0.1; // Percentage of elite solutions to retain
 
         public TSPGeneticAlgorithm(List<Point> pointsGiven) : base(pointsGiven)
         {
+            this.populationSize = Math.Max(70, pointsGiven.Count * 8); // Increased population size
+            this.generations = Math.Max(100, pointsGiven.Count);       // More generations
+            this.temperature = 10000; // Initial temperature
         }
 
         public override (string BestPath, double BestScore, TimeSpan ElapsedTime) Solve()
         {
-            bool hasConverged = false;
-            int threshold = 10 * this.PointsGiven.Count; // Number of generations without improvement for convergence
-            int dniCount = 0;                            // Tracks generations with no score improvement
-            int populationCount = 4 * this.PointsGiven.Count;
-            int eliteCount = populationCount / 4;
-            int generation = 0;
-            int maxGenerations = 1000; // Prevent infinite loops
-            double totalScores;
-
-            var population = new List<List<int>>();
-            var children = new List<List<int>>(populationCount);
-            var nextGenScores = new double[populationCount];
-            double mutationRate = 0.1;
-            List<int> bestPath = null;
-            double currentBestScore = double.MaxValue;
-
-            var stopWatch = new Stopwatch();
+            var stopWatch = new System.Diagnostics.Stopwatch();
             stopWatch.Start();
 
             this.CalculateDistanceMatrix();
 
-            // Initialize total paths
-            this.totalPaths = populationCount * threshold;
+            var population = new List<(List<int> Gnome, double Fitness)>();
 
-            this.TotalGenerations = 0;
-            this.PopulationSize = populationCount;
-            this.MutationRate = mutationRate;
-
-            // Fix the starting city index
-            int startingCityIndex = 0;
-
-            int cityCount = this.PointsGiven.Count;
-
-            // Create initial sample population
-            for (int i = 0; i < populationCount; i++)
+            // Generate the initial population with some greedy heuristics
+            for (int i = 0; i < populationSize; i++)
             {
-                var individual = GenerateRandomPath(cityCount, startingCityIndex);
-                population.Add(individual);
+                var gnome = i < populationSize / 2 ? GenerateGreedyPath() : GenerateRandomPath(this.PointsGiven.Count, 0);
+                var fitness = this.CalculateRouteCost(gnome);
+                population.Add((gnome, fitness));
             }
 
-            foreach (var individual in population)
+            int generation = 1;
+            while (temperature > 1000 && generation <= generations)
             {
-                double score = this.CalculateRouteCost(individual);
-                if (score < currentBestScore)
+                // Sort population by fitness (ascending order)
+                population = population.OrderBy(x => x.Fitness).ToList();
+
+                var newPopulation = new List<(List<int> Gnome, double Fitness)>();
+
+                // Preserve elite solutions
+                int eliteCount = (int)(populationSize * ElitismRate);
+                newPopulation.AddRange(population.Take(eliteCount));
+
+                // Generate the rest of the new population
+                while (newPopulation.Count < populationSize)
                 {
-                    currentBestScore = score;
-                    bestPath = new List<int>(individual);
-                }
-                this.pathsChecked++;
-            }
-            this.InitialBestScore = currentBestScore; // Set InitialBestScore
-
-            while (!hasConverged && generation < maxGenerations)
-            {
-                totalScores = 0;
-
-                // Step 1: Crossover and mutate all members of the population
-                children.Clear();
-                for (int i = 0; i < populationCount; i += 2)
-                {
-                    // Select parents
-                    var parent1 = population[i];
-                    var parent2 = population[(i + 1) % populationCount];
-
-                    // Perform Ordered Crossover excluding the starting city
-                    var child1 = this.OrderedCrossover(parent1, parent2, startingCityIndex);
-                    var child2 = this.OrderedCrossover(parent2, parent1, startingCityIndex);
-
-                    // Apply Swap Mutation
-                    child1 = this.SwapMutation(child1, mutationRate, startingCityIndex);
-                    child2 = this.SwapMutation(child2, mutationRate, startingCityIndex);
-
-                    // Assign children to the new population
-                    children.Add(child1);
-                    children.Add(child2);
-
-                    // Calculate scores
-                    nextGenScores[i] = this.CalculateRouteCost(child1);
-                    nextGenScores[i + 1] = this.CalculateRouteCost(child2);
-
-                    totalScores += nextGenScores[i] + nextGenScores[i + 1];
-
-                    // Increment paths checked
-                    this.pathsChecked += 2;
+                    var parent = RouletteWheelSelection(population);
+                    var mutatedGnome = MutateGnome(parent.Gnome);
+                    //var optimizedGnome = LocalOptimization(mutatedGnome);
+                    var fitness = this.CalculateRouteCost(mutatedGnome);
+                    newPopulation.Add((mutatedGnome, fitness));
                 }
 
-                // Sort the children based on scores (ascending)
-                var sortedChildren = children.Zip(nextGenScores, (child, score) => new { Child = child, Score = score })
-                                             .OrderBy(cs => cs.Score)
-                                             .ToList();
+                // Cool down the temperature
+                temperature = CoolDown(temperature, generation, generations);
 
-                // Update best score
-                if (sortedChildren[0].Score < currentBestScore)
-                {
-                    dniCount = 0;
-                    currentBestScore = sortedChildren[0].Score;
-                    bestPath = new List<int>(sortedChildren[0].Child);
-                }
-                else
-                {
-                    dniCount++;
-                }
-
-                // Check convergence based on threshold
-                if (dniCount > threshold)
-                {
-                    hasConverged = true;
-                }
-
-                // Step 3: Elite Selection
-                population.Clear();
-
-                // Preserve elites
-                for (int i = 0; i < eliteCount; i++)
-                {
-                    population.Add(sortedChildren[i].Child);
-                }
-
-                // Build roulette wheel for selection
-                double totalScoreInverse = sortedChildren.Sum(cs => 1 / cs.Score);
-                double[] cumulativeProbabilities = new double[populationCount];
-                cumulativeProbabilities[0] = (1 / sortedChildren[0].Score) / totalScoreInverse;
-
-                for (int i = 1; i < populationCount; i++)
-                {
-                    cumulativeProbabilities[i] = cumulativeProbabilities[i - 1] + (1 / sortedChildren[i].Score) / totalScoreInverse;
-                }
-
-                // Fill the rest of the population using roulette wheel selection
-                while (population.Count < populationCount)
-                {
-                    double randValue = Utils.Random.NextDouble();
-                    for (int i = 0; i < populationCount; i++)
-                    {
-                        if (randValue <= cumulativeProbabilities[i])
-                        {
-                            population.Add(sortedChildren[i].Child);
-                            break;
-                        }
-                    }
-                }
-
-                // Adjust mutation rate
-                mutationRate = dniCount < threshold / 2 ? 0.1 : 0.2;
-                this.MutationRate = mutationRate;
+                // Replace old population with new population
+                population = newPopulation;
 
                 generation++;
-                this.TotalGenerations = generation;
             }
+
+            // Get the best solution from the final population
+            var bestSolution = population.OrderBy(x => x.Fitness).First();
 
             stopWatch.Stop();
 
-            this.PaintPath = bestPath;
+            this.PaintPath = bestSolution.Gnome;
 
-            string bestPathString = this.BuildPathString(bestPath);
+            // Ensure the path returns to the initial city
+            if (bestSolution.Gnome[bestSolution.Gnome.Count - 1] != bestSolution.Gnome[0])
+            {
+                bestSolution.Gnome.Add(bestSolution.Gnome[0]);
+            }
 
-            return (bestPathString, currentBestScore, stopWatch.Elapsed);
+            return (BuildPathString(bestSolution.Gnome), bestSolution.Fitness, stopWatch.Elapsed);
+        }
+
+        private List<int> MutateGnome(List<int> gnome)
+        {
+            var rnd = Utils.Random.NextDouble();
+            var mutatedGnome = new List<int>(gnome);
+            int size = gnome.Count - 2; // Exclude start and end cities
+
+            if (rnd < 0.5)
+            {
+                // Swap mutation
+                int index1 = Utils.Random.Next(1, size + 1);
+                int index2 = Utils.Random.Next(1, size + 1);
+
+                while (index1 == index2)
+                {
+                    index2 = Utils.Random.Next(1, size + 1);
+                }
+
+                (mutatedGnome[index1], mutatedGnome[index2]) = (mutatedGnome[index2], mutatedGnome[index1]);
+            }
+            else
+            {
+                // Reverse mutation
+                int index1 = Utils.Random.Next(1, size + 1);
+                int index2 = Utils.Random.Next(1, size + 1);
+
+                if (index1 > index2)
+                {
+                    (index1, index2) = (index2, index1);
+                }
+
+                mutatedGnome = mutatedGnome.Take(index1)
+                                           .Concat(mutatedGnome.Skip(index1).Take(index2 - index1 + 1).Reverse())
+                                           .Concat(mutatedGnome.Skip(index2 + 1))
+                                           .ToList();
+            }
+
+            return mutatedGnome;
+        }
+
+        private List<int> LocalOptimization(List<int> gnome)
+        {
+            for (int i = 1; i < gnome.Count - 2; i++)
+            {
+                for (int j = i + 1; j < gnome.Count - 1; j++)
+                {
+                    var optimizedGnome = new List<int>(gnome);
+                    optimizedGnome.Reverse(i, j - i + 1);
+
+                    if (this.CalculateRouteCost(optimizedGnome) < this.CalculateRouteCost(gnome))
+                    {
+                        gnome = optimizedGnome;
+                    }
+                }
+            }
+            return gnome;
+        }
+
+        private List<int> GenerateGreedyPath()
+        {
+            var path = new List<int> { 0 };
+            var remainingCities = new HashSet<int>(Enumerable.Range(1, this.PointsGiven.Count - 1));
+
+            while (remainingCities.Count > 0)
+            {
+                int lastCity = path[^1];
+                int nextCity = remainingCities.OrderBy(city => this.distanceMatrix[lastCity, city]).First();
+                path.Add(nextCity);
+                remainingCities.Remove(nextCity);
+            }
+
+            path.Add(0); // Return to the starting city
+            return path;
+        }
+
+        private (List<int> Gnome, double Fitness) RouletteWheelSelection(List<(List<int> Gnome, double Fitness)> population)
+        {
+            double totalFitness = population.Sum(individual => 1 / individual.Fitness);
+            double rand = Utils.Random.NextDouble() * totalFitness;
+
+            double cumulativeFitness = 0;
+            foreach (var individual in population)
+            {
+                cumulativeFitness += 1 / individual.Fitness;
+                if (cumulativeFitness >= rand)
+                {
+                    return individual;
+                }
+            }
+
+            return population.Last();
+        }
+
+        private double CoolDown(double currentTemperature, int generation, int maxGenerations)
+        {
+            return currentTemperature * (1 - (0.1 * generation / maxGenerations));
         }
 
         private static List<int> GenerateRandomPath(int size, int startingCityIndex)
         {
             var cities = Enumerable.Range(0, size).ToList();
             cities.Remove(startingCityIndex);
-            var shuffledCities = cities.OrderBy(x => Utils.Random.Next()).ToList();
+            var shuffledCities = cities.OrderBy(_ => Utils.Random.Next()).ToList();
             shuffledCities.Insert(0, startingCityIndex);
             shuffledCities.Add(startingCityIndex); // Complete the cycle
             return shuffledCities;
-        }
-
-        private List<int> OrderedCrossover(List<int> parent1, List<int> parent2, int startingCityIndex)
-        {
-            int size = parent1.Count - 2; // Exclude starting city at both ends
-            int start = Utils.Random.Next(1, size + 1);
-            int end = Utils.Random.Next(1, size + 1);
-
-            while (end == start)
-            {
-                end = Utils.Random.Next(1, size + 1);
-            }
-
-            if (start > end)
-            {
-                int temp = start;
-                start = end;
-                end = temp;
-            }
-
-            // Extract segment from parent1
-            var segment = parent1.GetRange(start, end - start + 1);
-
-            // Exclude starting city from parent2
-            var p2 = parent2.GetRange(1, parent2.Count - 2);
-
-            // Remove the cities in the segment from parent2
-            var remainingCities = p2.Where(city => !segment.Contains(city)).ToList();
-
-            // Build child sequence
-            var child = new List<int>(new int[parent1.Count]);
-            child[0] = startingCityIndex;
-            child[^1] = startingCityIndex;
-
-            // Place segment into the child
-            for (int i = start; i <= end; i++)
-            {
-                child[i] = segment[i - start];
-            }
-
-            // Fill the remaining positions with cities from parent2
-            int p2Index = 0;
-            for (int i = 1; i < child.Count - 1; i++)
-            {
-                if (child[i] == 0) // Assuming city indices are positive integers
-                {
-                    child[i] = remainingCities[p2Index];
-                    p2Index++;
-                }
-            }
-
-            return child;
-        }
-
-        private List<int> SwapMutation(List<int> path, double mutationRate, int startingCityIndex)
-        {
-            var rnd = Utils.Random;
-            double chance = rnd.NextDouble();
-
-            if (chance < mutationRate)
-            {
-                int size = path.Count - 2; // Exclude starting city at both ends
-                int index1 = rnd.Next(1, size + 1);
-                int index2 = rnd.Next(1, size + 1);
-
-                while (index1 == index2)
-                {
-                    index2 = rnd.Next(1, size + 1);
-                }
-
-                // Swap the cities at index1 and index2
-                (path[index2], path[index1]) = (path[index1], path[index2]);
-            }
-
-            return path;
         }
     }
 }

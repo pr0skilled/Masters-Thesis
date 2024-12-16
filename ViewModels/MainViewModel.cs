@@ -25,9 +25,7 @@ namespace Thesis.ViewModels
         private int createPointsNumber;
         private int userCitiesCount;
         private int currentStepIndex;
-        private int optimalKnownScore;
         private bool isRunning;
-        private bool canStep;
         private bool isDrawingMode;
         private Visibility sliderVisibility = Visibility.Collapsed;
         private string bestPathString;
@@ -35,6 +33,8 @@ namespace Thesis.ViewModels
         private string costSummary;
         private string cursorPosition;
         private string rootDirectory;
+        private double canvasHeight;
+        private double canvasWidth;
 
         private TSPCustomAlgorithm customAlgorithmInstance;
 
@@ -243,6 +243,7 @@ namespace Thesis.ViewModels
         public ICommand RunGeneticAlgorithmCommand { get; }
         public ICommand RunPrimsApproximationCommand { get; }
         public ICommand RunCustomAlgorithmCommand { get; }
+        public ICommand RunConvexHullCommand { get; }
         public ICommand EnableDrawingModeCommand { get; }
         public ICommand ClearCanvasCommand { get; }
         public ICommand SavePointsCommand { get; }
@@ -250,9 +251,11 @@ namespace Thesis.ViewModels
 
         #endregion
 
-        public MainViewModel(IFileDialogService fileDialogService)
+        public MainViewModel(IFileDialogService fileDialogService, double canvasHeight, double canvasWidth)
         {
-            this.UserCanvasPoints.CollectionChanged += UserCanvasPointsChanged;
+            this.canvasHeight = canvasHeight;
+            this.canvasWidth = canvasWidth;
+            this.UserCanvasPoints.CollectionChanged += this.UserCanvasPointsChanged;
             this.fileDialogService = fileDialogService;
             this.chartData = new();
             this.rootDirectory = Path.Combine(Utils.GetSolutionDirectoryPath(), "Data");
@@ -266,6 +269,7 @@ namespace Thesis.ViewModels
             this.RunSimulatedAnnealingCommand = new RelayCommand(this.RunSimulatedAnnealingAlgorithm, this.CanExecuteRunAlgorithm);
             this.RunGeneticAlgorithmCommand = new RelayCommand(this.RunGeneticAlgorithm, this.CanExecuteRunAlgorithm);
             this.RunPrimsApproximationCommand = new RelayCommand(this.RunPrimsApproximationAlgorithm, this.CanExecuteRunAlgorithm);
+            this.RunConvexHullCommand = new RelayCommand(this.RunConvexHullAlgorithm, this.CanExecuteRunAlgorithm);
             this.RunCustomAlgorithmCommand = new RelayCommand(this.RunCustomAlgorithm, this.CanExecuteRunAlgorithm);
             this.EnableDrawingModeCommand = new RelayCommand(_ => this.EnableDrawingMode());
             this.ClearCanvasCommand = new RelayCommand(_ => this.ClearCanvas(), _ => this.IsDrawingMode);
@@ -332,7 +336,7 @@ namespace Thesis.ViewModels
 
             this.SliderVisibility = Visibility.Collapsed;
 
-            chartData.StartNewDataset();
+            this.chartData.StartNewDataset();
 
             this.OnPropertyChanged(nameof(this.PointsGiven));
         }
@@ -341,20 +345,20 @@ namespace Thesis.ViewModels
         {
             this.pointsGiven.Clear();
             this.pointsGiven.Add(new Point(4, 189));
-            this.pointsGiven.Add(new Point(225, 176));
-            this.pointsGiven.Add(new Point(260, 145));
-            this.pointsGiven.Add(new Point(199, 302));
-            this.pointsGiven.Add(new Point(209, 248));
             this.pointsGiven.Add(new Point(29, 304));
             this.pointsGiven.Add(new Point(60, 2));
             this.pointsGiven.Add(new Point(83, 82));
             this.pointsGiven.Add(new Point(140, 311));
+            this.pointsGiven.Add(new Point(199, 302));
+            this.pointsGiven.Add(new Point(209, 248));
+            this.pointsGiven.Add(new Point(225, 176));
+            this.pointsGiven.Add(new Point(360, 145));
             this.pointsGiven.Add(new Point(266, 286));
-            this.pointsGiven.Add(new Point(550, 421));
+            this.pointsGiven.Add(new Point(290, 421));
 
             this.SliderVisibility = Visibility.Collapsed;
 
-            chartData.StartNewDataset();
+            this.chartData.StartNewDataset();
 
             this.OnPropertyChanged(nameof(this.PointsGiven));
         }
@@ -362,22 +366,22 @@ namespace Thesis.ViewModels
         private void LoadSet3(object parameter)
         {
             this.pointsGiven.Clear();
-            this.pointsGiven.Add(new Point(259, 498));
-            this.pointsGiven.Add(new Point(295, 468));
-            this.pointsGiven.Add(new Point(300, 492));
-            this.pointsGiven.Add(new Point(76, 113));
-            this.pointsGiven.Add(new Point(84, 329));
-            this.pointsGiven.Add(new Point(101, 227));
-            this.pointsGiven.Add(new Point(155, 359));
-            this.pointsGiven.Add(new Point(213, 401));
-            this.pointsGiven.Add(new Point(240, 470));
-            this.pointsGiven.Add(new Point(150, 418));
-            this.pointsGiven.Add(new Point(179, 251));
-            this.pointsGiven.Add(new Point(30, 30));
+            this.pointsGiven.Add(new Point(12, 234));
+            this.pointsGiven.Add(new Point(45, 567));
+            this.pointsGiven.Add(new Point(78, 89));
+            this.pointsGiven.Add(new Point(123, 321));
+            this.pointsGiven.Add(new Point(456, 456));
+            this.pointsGiven.Add(new Point(345, 567));
+            this.pointsGiven.Add(new Point(234, 98));
+            this.pointsGiven.Add(new Point(501, 123));
+            this.pointsGiven.Add(new Point(365, 400));
+            this.pointsGiven.Add(new Point(220, 515));
+            this.pointsGiven.Add(new Point(415, 123));
+            this.pointsGiven.Add(new Point(530, 350));
 
             this.SliderVisibility = Visibility.Collapsed;
 
-            chartData.StartNewDataset();
+            this.chartData.StartNewDataset();
 
             this.OnPropertyChanged(nameof(this.PointsGiven));
         }
@@ -469,7 +473,7 @@ namespace Thesis.ViewModels
             this.ElapsedTime = result.ElapsedTime;
 
             this.ResultsSummary = $"Genetic Algorithm: Best path = {this.BestPathString}, Best distance = {this.BestScore:F0}, RunTime = {this.ElapsedTime.TotalSeconds:F6} seconds";
-            this.CostSummary = $"Total generations: {algorithm.TotalGenerations}. Population size: {algorithm.PopulationSize}. Final mutation rate: {algorithm.MutationRate:P}. Paths evaluated: {algorithm.PathsChecked}. Initial best score: {algorithm.InitialBestScore:F2}";
+            //this.CostSummary = $"Total generations: {algorithm.TotalGenerations}. Population size: {algorithm.PopulationSize}. Final mutation rate: {algorithm.MutationRate:P}. Paths evaluated: {algorithm.PathsChecked}. Initial best score: {algorithm.InitialBestScore:F2}";
 
             this.IsRunning = false;
         }
@@ -492,7 +496,30 @@ namespace Thesis.ViewModels
             this.ElapsedTime = result.ElapsedTime;
 
             this.ResultsSummary = $"Prim's Approx: Best path = {this.BestPathString}, Best distance = {this.BestScore:F0}, RunTime = {this.ElapsedTime.TotalSeconds:F6} seconds";
-            this.CostSummary = $"Total MST cost: {algorithm.MSTCost:F2}. Number of nodes in MST: {algorithm.NumberOfNodes}.";
+            this.CostSummary = $"Total MST cost: {algorithm.MSTCost:F2}.";
+
+            this.IsRunning = false;
+        }
+        
+        private void RunConvexHullAlgorithm(object parameter)
+        {
+            this.IsRunning = true;
+
+            this.SliderVisibility = Visibility.Collapsed;
+
+            var algorithm = new TSPConvexHullAlgorithm(new List<Point>(this.PointsGiven));
+            var result = algorithm.Solve();
+
+            this.chartData.AddRuntimeData(AlgorithmType.ConvexHull, this.PointsGiven.Count, result.ElapsedTime.TotalMilliseconds);
+            this.chartData.AddCostData(AlgorithmType.ConvexHull, result.BestScore);
+
+            this.BestPathIndices = algorithm.PaintPath;
+            this.BestPathString = result.BestPath;
+            this.BestScore = result.BestScore;
+            this.ElapsedTime = result.ElapsedTime;
+
+            this.ResultsSummary = $"Convex Hull: Best path = {this.BestPathString}, Best distance = {this.BestScore:F0}, RunTime = {this.ElapsedTime.TotalSeconds:F6} seconds";
+            this.CostSummary = $"Convex Hull Perimeter: {algorithm.HullPerimeter:F2}. Points on Hull: {algorithm.HullPointCount}.";
 
             this.IsRunning = false;
         }
@@ -603,20 +630,20 @@ namespace Thesis.ViewModels
                 {
                     counter++;
                     string[] points = line.Split(' ');
-                    if (!int.TryParse(points[0], out int x))
+                    if (!double.TryParse(points[0], out double x))
                     {
                         MessageBox.Show($"Error: Line {counter} x coordinate is not a valid integer");
                         this.PointsGiven.Clear();
                         return;
                     }
-                    if (!int.TryParse(points[1], out int y))
+                    if (!double.TryParse(points[1], out double y))
                     {
                         MessageBox.Show($"Error: Line {counter} y coordinate is not a valid integer");
                         this.PointsGiven.Clear();
                         return;
                     }
-                    if (x < 0 || x > 750 ||
-                        y < 0 || y > 750)
+                    if (x < 0 || x > this.canvasWidth ||
+                        y < 0 || y > this.canvasHeight)
                     {
                         MessageBox.Show($"Error: Line {counter} coordinates are not in range");
                         this.PointsGiven.Clear();
@@ -627,17 +654,16 @@ namespace Thesis.ViewModels
 
                 this.ClearCanvas();
 
-                chartData.StartNewDataset();
+                this.chartData.StartNewDataset();
 
                 var regex = new Regex(@"\(-(\d+)-\)");
                 var match = regex.Match(filePath);
                 if (match.Success)
                 {
-                    int.TryParse(match.Groups[1].Value, out int number);
-                    this.optimalKnownScore = number;
+                    _ = int.TryParse(match.Groups[1].Value, out int number);
 
-                    chartData.AddRuntimeData(AlgorithmType.BruteForce, this.PointsGiven.Count, -1);
-                    chartData.AddCostData(AlgorithmType.BruteForce, number);
+                    this.chartData.AddRuntimeData(AlgorithmType.BruteForce, this.PointsGiven.Count, -1);
+                    this.chartData.AddCostData(AlgorithmType.BruteForce, number);
                 }
 
                 this.OnPropertyChanged(nameof(this.PointsGiven));
@@ -675,7 +701,7 @@ namespace Thesis.ViewModels
 
         protected void UserCanvasPointsChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            this.UserCitiesCount = UserCanvasPoints.Count;
+            this.UserCitiesCount = this.UserCanvasPoints.Count;
         }
 
         protected virtual void OnConfirmationRequested(string message, string caption, Action<bool> callback)

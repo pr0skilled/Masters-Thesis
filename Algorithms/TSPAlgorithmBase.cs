@@ -12,6 +12,9 @@ namespace Thesis.Algorithms
         public List<Point> PointsGiven { get; private set; }
         public List<int> PaintPath { get; set; }
 
+        public double MemoryUsageMB { get; set; }
+        public double CPUUsagePercentage { get; set; }
+
         public TSPAlgorithmBase(List<Point> pointsGiven)
         {
             this.PointsGiven = pointsGiven;
@@ -34,7 +37,7 @@ namespace Thesis.Algorithms
                     }
                     else
                     {
-                        double distance = FindPointDistance(this.PointsGiven[i], this.PointsGiven[j]);
+                        double distance = this.FindPointDistance(this.PointsGiven[i], this.PointsGiven[j]);
                         this.distanceMatrix[i, j] = distance;
                         this.distanceMatrix[j, i] = distance;
                     }

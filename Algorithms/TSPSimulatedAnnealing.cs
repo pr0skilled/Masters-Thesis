@@ -1,5 +1,7 @@
-﻿using System.Diagnostics;
-using System.Windows;
+﻿using System.Windows;
+using System.Diagnostics;
+
+using Math = System.Math;
 
 namespace Thesis.Algorithms
 {
@@ -7,140 +9,156 @@ namespace Thesis.Algorithms
 
     public class TSPSimulatedAnnealing : TSPAlgorithmBase, ITSPAlgorithm
     {
+        private double initialTemperature;
+        private double alpha;
         private int pathsChecked;
-        private int totalPaths;
-
-        public int PathsChecked => this.pathsChecked;
-        public int TotalPaths => this.totalPaths;
 
         public double InitialTemperature { get; private set; }
         public double FinalTemperature { get; private set; }
+        public int PathsChecked => this.pathsChecked;
 
-        public TSPSimulatedAnnealing(List<Point> pointsGiven) : base(pointsGiven)
+        public TSPSimulatedAnnealing(List<Point> pointsGiven, double initialTemperature = 5000, double alpha = 0.99) : base(pointsGiven)
         {
+            this.initialTemperature = initialTemperature;
+            this.alpha = alpha;
         }
 
         public override (string BestPath, double BestScore, TimeSpan ElapsedTime) Solve()
         {
-            double temperatureReductionFactor = 0.99; // Slow cooling for better exploration
-            double randomChoice;
-            List<int> candidatePath;
-            double acceptanceProbability;
-
-            var stopWatch = new Stopwatch();
-            double newScore;
-
-            stopWatch.Start();
+            var stopWatch = Stopwatch.StartNew();
             this.CalculateDistanceMatrix();
 
-            // Initialize the current path with city indices and complete the cycle
-            var currentPath = new List<int>();
-            for (int i = 0; i < this.PointsGiven.Count; i++)
-            {
-                currentPath.Add(i);
-            }
-            currentPath.Add(0); // Return to starting city
+            var currentSolution = Enumerable.Range(0, this.PointsGiven.Count).ToList();
+            var bestSolution = new List<int>(currentSolution);
 
-            this.InitialTemperature = this.CalculateRouteCost(currentPath);
-            double bestScore = this.InitialTemperature;
-            double currentTemperature = this.InitialTemperature;
-            int maxIterationsPerEpoch = 100 * this.PointsGiven.Count;
+            this.InitialTemperature = this.initialTemperature;
+            double bestCost = this.CalculateRouteCost(bestSolution);
+            double currentTemperature = this.initialTemperature;
 
-            var rnd = Utils.Random;
+            int sameSolutionCount = 0;
+            int sameCostDifferenceCount = 0;
             this.pathsChecked = 0;
-            this.totalPaths = Utils.Factorial(this.PointsGiven.Count);
 
-            while (currentTemperature > 1e-5) // Stop when temperature becomes very small
+            while (sameSolutionCount < 1500 && sameCostDifferenceCount < 150000)
             {
-                for (int i = 0; i < maxIterationsPerEpoch; i++)
+                var neighbor = GenerateNeighbor(currentSolution);
+
+                double currentCost = this.CalculateRouteCost(currentSolution);
+                double neighborCost = this.CalculateRouteCost(neighbor);
+                double costDifference = neighborCost - currentCost;
+
+                if (costDifference < 0) // Lower cost is better
                 {
-                    int start = rnd.Next(1, this.PointsGiven.Count); // Exclude starting city at index 0
-                    int end = rnd.Next(1, this.PointsGiven.Count);
+                    currentSolution = neighbor;
+                    sameSolutionCount = 0;
+                    sameCostDifferenceCount = 0;
 
-                    while (end == start)
+                    if (neighborCost < bestCost)
                     {
-                        end = rnd.Next(1, this.PointsGiven.Count);
+                        bestCost = neighborCost;
+                        bestSolution = new List<int>(neighbor);
                     }
-
-                    // Randomly choose a manipulation method
-                    randomChoice = rnd.NextDouble();
-                    if (randomChoice < 0.5)
-                        candidatePath = Reverse(currentPath, start, end);
-                    else
-                        candidatePath = Transport(currentPath, start, end);
-
-                    // Evaluate the candidate path
-                    newScore = this.CalculateRouteCost(candidatePath);
-                    double scoreDifference = newScore - bestScore;
-                    acceptanceProbability = Math.Exp(-scoreDifference / currentTemperature);
-
-                    randomChoice = rnd.NextDouble();
-                    if (scoreDifference < 0 || acceptanceProbability > randomChoice)
-                    {
-                        currentPath = candidatePath;
-                        if (newScore < bestScore)
-                        {
-                            bestScore = newScore;
-                        }
-                    }
-
-                    this.pathsChecked++;
+                }
+                else if (costDifference == 0)
+                {
+                    currentSolution = neighbor;
+                    sameSolutionCount = 0;
+                    sameCostDifferenceCount++;
+                }
+                else if (Utils.Random.NextDouble() <= Math.Exp(-costDifference / currentTemperature))
+                {
+                    currentSolution = neighbor;
+                    sameSolutionCount = 0;
+                    sameCostDifferenceCount = 0;
+                }
+                else
+                {
+                    sameSolutionCount++;
+                    sameCostDifferenceCount++;
                 }
 
-                // Reduce temperature
-                currentTemperature *= temperatureReductionFactor;
-                Console.WriteLine($"Temperature: {currentTemperature:F2}, Best Score: {bestScore:F2}");
+                this.pathsChecked++;
+                currentTemperature *= this.alpha;
             }
-
-            stopWatch.Stop();
 
             this.FinalTemperature = currentTemperature;
 
-            this.PaintPath = new List<int>(currentPath);
+            bestSolution.Add(bestSolution.First());
+            bestCost = this.CalculateRouteCost(bestSolution);
 
-            string bestPathString = this.BuildPathString(currentPath);
+            stopWatch.Stop();
+            this.PaintPath = new List<int>(bestSolution);
 
-            return (bestPathString, bestScore, stopWatch.Elapsed);
+            return (this.BuildPathString(bestSolution), bestCost, stopWatch.Elapsed);
         }
 
-        public static List<int> Reverse(List<int> path, int x, int y)
+        private List<int> GenerateNeighbor(List<int> currentSolution)
         {
-            int start = Math.Min(x, y);
-            int end = Math.Max(x, y);
+            var neighbor = new List<int>(currentSolution);
 
-            var reversedSection = path.GetRange(start, end - start + 1);
-            reversedSection.Reverse();
+            int method = Utils.Random.Next(4);
 
-            var newPath = new List<int>(path);
-            newPath.RemoveRange(start, end - start + 1);
-            newPath.InsertRange(start, reversedSection);
+            switch (method)
+            {
+                case 0:
+                    Reverse(neighbor);
+                    break;
+                case 1:
+                    Insert(neighbor);
+                    break;
+                case 2:
+                    Swap(neighbor);
+                    break;
+                case 3:
+                    Transport(neighbor);
+                    break;
+            }
 
-            return newPath;
+            return neighbor;
         }
 
-        public static List<int> Transport(List<int> path, int x, int y)
+        private static void Reverse(List<int> path)
         {
-            int start = Math.Min(x, y);
-            int end = Math.Max(x, y);
+            int start = Utils.Random.Next(path.Count);
+            int end = Utils.Random.Next(path.Count);
 
-            // Ensure the transport does not include the starting/ending city
-            if (start == 0 || end == path.Count - 1) return path;
+            if (start > end)
+                (start, end) = (end, start);
 
-            var sub = path.GetRange(start, end - start + 1);
-            var trans = new List<int>(path);
-            trans.RemoveRange(start, end - start + 1);
-
-            // Choose a valid insertion point (excluding the start/end cities)
-            int insertPoint = Utils.Random.Next(1, trans.Count - 1);
-
-            trans.InsertRange(insertPoint, sub);
-
-            return trans;
+            path.Reverse(start, end - start + 1);
         }
 
-        public string GetCostSummary()
+        private static void Insert(List<int> path)
         {
-            return $"Paths Checked ({this.pathsChecked}/{this.totalPaths}) = {((double)this.pathsChecked / this.totalPaths * 100):F08}%";
+            int from = Utils.Random.Next(path.Count);
+            int to = Utils.Random.Next(path.Count);
+
+            var node = path[from];
+            path.RemoveAt(from);
+            path.Insert(to, node);
+        }
+
+        private static void Swap(List<int> path)
+        {
+            int indexA = Utils.Random.Next(path.Count);
+            int indexB = Utils.Random.Next(path.Count);
+
+            (path[indexA], path[indexB]) = (path[indexB], path[indexA]);
+        }
+
+        private static void Transport(List<int> path)
+        {
+            int start = Utils.Random.Next(path.Count);
+            int end = Utils.Random.Next(path.Count);
+
+            if (start > end)
+                (start, end) = (end, start);
+
+            var subroute = path.GetRange(start, end - start + 1);
+            path.RemoveRange(start, end - start + 1);
+
+            int insertPos = Utils.Random.Next(path.Count);
+            path.InsertRange(insertPos, subroute);
         }
     }
 }
