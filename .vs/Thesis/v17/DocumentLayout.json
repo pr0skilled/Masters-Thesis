@@ -3,12 +3,20 @@
   "WorkspaceRootPath": "C:\\Users\\Alex\\source\\repos\\Thesis\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|c:\\users\\alex\\source\\repos\\thesis\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|solutionrelative:mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|c:\\users\\alex\\source\\repos\\thesis\\algorithms\\tspcustomalgorithm.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|solutionrelative:algorithms\\tspcustomalgorithm.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|c:\\users\\alex\\source\\repos\\thesis\\algorithms\\tspalgorithmbase.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|solutionrelative:algorithms\\tspalgorithmbase.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|c:\\users\\alex\\source\\repos\\thesis\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
       "RelativeMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|solutionrelative:mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|c:\\users\\alex\\source\\repos\\thesis\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|solutionrelative:mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|c:\\users\\alex\\source\\repos\\thesis\\algorithms\\tspgeneticalgorithm.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -27,16 +35,8 @@
       "RelativeMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|solutionrelative:algorithms\\tspsimulatedannealing.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|c:\\users\\alex\\source\\repos\\thesis\\algorithms\\tspalgorithmbase.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|solutionrelative:algorithms\\tspalgorithmbase.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|c:\\users\\alex\\source\\repos\\thesis\\algorithms\\tspprimsapproximation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|solutionrelative:algorithms\\tspprimsapproximation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|c:\\users\\alex\\source\\repos\\thesis\\algorithms\\tspcustomalgorithm.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|solutionrelative:algorithms\\tspcustomalgorithm.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{AE0A3564-515D-4DA9-B1A5-20E436F1377C}|Thesis.csproj|c:\\users\\alex\\source\\repos\\thesis\\algorithms\\itspalgorithm.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -54,7 +54,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 228,
-          "SelectedChildIndex": 22,
+          "SelectedChildIndex": 25,
           "Children": [
             {
               "$type": "Bookmark",
@@ -142,7 +142,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "MainWindow.xaml",
               "DocumentMoniker": "C:\\Users\\Alex\\source\\repos\\Thesis\\MainWindow.xaml",
               "RelativeDocumentMoniker": "MainWindow.xaml",
@@ -154,20 +154,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 3,
               "Title": "MainWindow.xaml.cs",
               "DocumentMoniker": "C:\\Users\\Alex\\source\\repos\\Thesis\\MainWindow.xaml.cs",
               "RelativeDocumentMoniker": "MainWindow.xaml.cs",
               "ToolTip": "C:\\Users\\Alex\\source\\repos\\Thesis\\MainWindow.xaml.cs",
               "RelativeToolTip": "MainWindow.xaml.cs",
-              "ViewState": "AQIAACgCAAAAAAAAAAAYwEsCAAAqAAAA",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAD8CAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2024-11-08T15:16:02.508Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 5,
               "Title": "MainViewModel.cs",
               "DocumentMoniker": "C:\\Users\\Alex\\source\\repos\\Thesis\\ViewModels\\MainViewModel.cs",
               "RelativeDocumentMoniker": "ViewModels\\MainViewModel.cs",
@@ -175,38 +175,37 @@
               "RelativeToolTip": "ViewModels\\MainViewModel.cs",
               "ViewState": "AQIAAC8BAAAAAAAAAAAxwNsBAAAOAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-11-12T17:18:54.021Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-11-12T17:18:54.021Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 1,
               "Title": "TSPAlgorithmBase.cs",
               "DocumentMoniker": "C:\\Users\\Alex\\source\\repos\\Thesis\\Algorithms\\TSPAlgorithmBase.cs",
               "RelativeDocumentMoniker": "Algorithms\\TSPAlgorithmBase.cs",
               "ToolTip": "C:\\Users\\Alex\\source\\repos\\Thesis\\Algorithms\\TSPAlgorithmBase.cs",
               "RelativeToolTip": "Algorithms\\TSPAlgorithmBase.cs",
-              "ViewState": "AQIAABIAAAAAAAAAAAAAwC4AAAAAAAAA",
+              "ViewState": "AQIAAAgAAAAAAAAAAAAQwDgAAAArAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2024-11-22T16:25:22.607Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 0,
               "Title": "TSPCustomAlgorithm.cs",
               "DocumentMoniker": "C:\\Users\\Alex\\source\\repos\\Thesis\\Algorithms\\TSPCustomAlgorithm.cs",
               "RelativeDocumentMoniker": "Algorithms\\TSPCustomAlgorithm.cs",
               "ToolTip": "C:\\Users\\Alex\\source\\repos\\Thesis\\Algorithms\\TSPCustomAlgorithm.cs",
               "RelativeToolTip": "Algorithms\\TSPCustomAlgorithm.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAMEAAAAAAAAA",
+              "ViewState": "AQIAACUAAAAAAAAAAAAkwEsAAAAqAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2024-11-14T03:49:46.206Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 6,
               "Title": "TSPBruteForce.cs",
               "DocumentMoniker": "C:\\Users\\Alex\\source\\repos\\Thesis\\Algorithms\\TSPBruteForce.cs",
               "RelativeDocumentMoniker": "Algorithms\\TSPBruteForce.cs",
@@ -214,12 +213,11 @@
               "RelativeToolTip": "Algorithms\\TSPBruteForce.cs",
               "ViewState": "AQIAAAwAAAAAAAAAAAAIwBMAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-11-27T15:06:35.718Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-11-27T15:06:35.718Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 7,
               "Title": "TSPSimulatedAnnealing.cs",
               "DocumentMoniker": "C:\\Users\\Alex\\source\\repos\\Thesis\\Algorithms\\TSPSimulatedAnnealing.cs",
               "RelativeDocumentMoniker": "Algorithms\\TSPSimulatedAnnealing.cs",
@@ -227,12 +225,11 @@
               "RelativeToolTip": "Algorithms\\TSPSimulatedAnnealing.cs",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAABIAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-11-27T15:06:51.208Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-11-27T15:06:51.208Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 4,
               "Title": "TSPGeneticAlgorithm.cs",
               "DocumentMoniker": "C:\\Users\\Alex\\source\\repos\\Thesis\\Algorithms\\TSPGeneticAlgorithm.cs",
               "RelativeDocumentMoniker": "Algorithms\\TSPGeneticAlgorithm.cs",
@@ -240,12 +237,11 @@
               "RelativeToolTip": "Algorithms\\TSPGeneticAlgorithm.cs",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAADgAAAAZAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-11-27T10:15:46.902Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-11-27T10:15:46.902Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 8,
               "Title": "TSPPrimsApproximation.cs",
               "DocumentMoniker": "C:\\Users\\Alex\\source\\repos\\Thesis\\Algorithms\\TSPPrimsApproximation.cs",
               "RelativeDocumentMoniker": "Algorithms\\TSPPrimsApproximation.cs",
@@ -253,8 +249,7 @@
               "RelativeToolTip": "Algorithms\\TSPPrimsApproximation.cs",
               "ViewState": "AQIAAEUAAAAAAAAAAAAIwF8AAABCAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-11-27T15:06:46.937Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-11-27T15:06:46.937Z"
             },
             {
               "$type": "Document",

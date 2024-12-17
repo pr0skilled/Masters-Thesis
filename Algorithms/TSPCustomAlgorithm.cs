@@ -157,37 +157,39 @@ namespace Thesis.Algorithms
             {
                 improvement = false;
 
-                for (int i = 0; i < route.Count; i++)
+                for (int i = 0; i < route.Count - 1; i++)
                 {
                     int city = route[i];
                     route.RemoveAt(i);
 
-                    double bestCost = double.MaxValue;
+                    double bestInsertionCost = double.MaxValue;
                     int bestPosition = -1;
 
-                    for (int j = 0; j <= route.Count; j++)
+                    for (int j = 0; j < route.Count; j++)
                     {
-                        var newRoute = new List<int>(route);
-                        newRoute.Insert(j, city);
-                        double cost = this.CalculateRouteCost(newRoute);
+                        int prevCity = route[j];
+                        int nextCity = route[(j + 1) % route.Count];
+                        double insertionCost = CalculateInsertionCost(prevCity, city, nextCity);
 
-                        if (cost < bestCost)
+                        if (insertionCost < bestInsertionCost)
                         {
-                            bestCost = cost;
-                            bestPosition = j;
+                            bestInsertionCost = insertionCost;
+                            bestPosition = j + 1;
                         }
                     }
 
                     route.Insert(bestPosition, city);
-                    if (this.CalculateRouteCost(route) < bestCost)
-                    {
-                        improvement = true;
 
-                        // Add the updated route to IntermediateRoutes
-                        this.IntermediateRoutes.Add(new List<int>(route));
-                    }
+                    if (bestInsertionCost < 0) improvement = true;
                 }
             }
+        }
+
+        private double CalculateInsertionCost(int prevCity, int city, int nextCity)
+        {
+            return this.distanceMatrix[prevCity, city]
+                 + this.distanceMatrix[city, nextCity]
+                 - this.distanceMatrix[prevCity, nextCity];
         }
     }
 }
